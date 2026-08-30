@@ -1,0 +1,16 @@
+# Installed device profile. Override its path at runtime with WINDOW_CONTROL_CONFIG.
+gimbal:
+  serial_port: "/dev/ttyCH343USB1"
+  baudrate: 115200
+  pitch_angle: 0
+  yaw_angle: 0
+  camera_mode: 0
+  focus: 1
+
+barometric_altimeter:
+  serial_port: "/dev/baro_altimeter"
+  baudrate: 460800
+
+radio_altimeter:
+  serial_port: "/dev/radio_altimeter"
+  baudrate: 230400

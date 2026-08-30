@@ -1,0 +1,28 @@
+<RCC>
+  <qresource prefix="/resources">
+    <file>FocusCamera.svg</file>
+    <file>setting.png</file>
+    <file>downward.png</file>
+    <file>height.png</file>
+    <file>Grid.png</file>
+    <file>Image.png</file>
+    <file>lightblue/add_top.png</file>
+    <file>reload.png</file>
+    <file>download.png</file>
+    <file>play.png</file>
+    <file>pause.png</file>
+    <file>set.ico</file>
+    <file>lightblue/add_bottom.png</file>
+    <file>CameraIcon.svg</file>
+    <file>style.qss</file>
+    <file>WindowsQGC.ico</file>
+    <file>up.png</file>
+    <file>OpenMap.svg</file>
+    <file>zoom.svg</file>
+    <file>visibility.svg</file>
+    <file>OpenFile.svg</file>
+    <file>down.png</file>
+    <file>down_2.png</file>
+    <file>line.png</file>
+  </qresource>
+</RCC>

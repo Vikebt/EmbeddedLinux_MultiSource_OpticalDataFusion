@@ -1,0 +1,9 @@
+<launch>
+  <node name="sbg_ellipseN" pkg="sbg_driver" type="sbg_device" output="screen">
+  	<rosparam command="load" file="$(find sbg_driver)/config/example/ellipse_N_default.yaml" />
+  </node>
+  <node name="ba_node" pkg="demo01_serial" type="ba_node" output="screen">
+    <!-- 如果有额外参数，可以在这里添加 -->
+    <!-- <param name="param_name" value="param_value" /> -->
+  </node>
+</launch>

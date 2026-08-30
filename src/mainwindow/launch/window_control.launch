@@ -1,0 +1,3 @@
+<launch>
+  <node pkg="window_control" type="window_control" name="window_control" output="screen" />
+</launch>
