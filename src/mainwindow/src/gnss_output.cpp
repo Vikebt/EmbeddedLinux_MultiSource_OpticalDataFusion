@@ -8,9 +8,7 @@ GnssOutput::GnssOutput(ros::NodeHandle& nh)
       sub_fix(nh, "/fdi_gps", 40),
       sub_vel(nh, "/fdi_enu", 40),
       high_freq_sync(HighFreqSyncPolicy(1000), sub_imu, sub_fix, sub_vel),
-      gnss_flag(0),
-      capture_num(0),
-      num(0)
+      gnss_flag(0)
 {
     high_freq_sync.registerCallback(boost::bind(&GnssOutput::highFreqCallback, this, _1, _2, _3));
 }
@@ -32,18 +30,12 @@ void GnssOutput::highFreqCallback(const sensor_msgs::ImuConstPtr& imu_msg,
 
         // 提取欧拉角 (Roll, Pitch, Yaw)
         double roll, pitch, yaw;
-        // tf2::Quaternion q(
-        //     imu_msg->orientation.x,
-        //     imu_msg->orientation.y,
-        //     imu_msg->orientation.z,
-        //     imu_msg->orientation.w
-        // );
-        // tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
-
-        // 转换为角度
-        roll = imu_msg->orientation.x * 180.0 / M_PI;
-        pitch = imu_msg->orientation.y * 180.0 / M_PI;
-        yaw = imu_msg->orientation.z * 180.0 / M_PI;
+        tf2::Quaternion q(imu_msg->orientation.x, imu_msg->orientation.y,
+                          imu_msg->orientation.z, imu_msg->orientation.w);
+        tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
+        roll *= 180.0 / M_PI;
+        pitch *= 180.0 / M_PI;
+        yaw *= 180.0 / M_PI;
 
         double latitude = fix_msg->latitude;
         double longitude = fix_msg->longitude;
@@ -64,7 +56,9 @@ void GnssOutput::highFreqCallback(const sensor_msgs::ImuConstPtr& imu_msg,
         // 处理时间 (UTC + 8)
         // 使用 imu_msg 的时间戳
         time_t raw_time = imu_msg->header.stamp.sec + 8 * 3600; 
-        struct tm * time_info = gmtime(&raw_time);
+        struct tm time_info_storage;
+        gmtime_r(&raw_time, &time_info_storage);
+        const struct tm *time_info = &time_info_storage;
 
         int hour = time_info->tm_hour;
         int min = time_info->tm_min;
@@ -79,7 +73,7 @@ void GnssOutput::highFreqCallback(const sensor_msgs::ImuConstPtr& imu_msg,
                     << std::setw(2) << std::setfill('0') << sec << "." 
                     << std::setw(3) << std::setfill('0') << nanosec/1000000;
 
-        gps_time_str = time_stream.str();  // 保存格式化的时间字符串
+        const std::string gps_time_str = time_stream.str();
         
         temp_result.mode = int(fix_msg->status.status);
         temp_result.pitch = pitch;
@@ -101,36 +95,20 @@ void GnssOutput::highFreqCallback(const sensor_msgs::ImuConstPtr& imu_msg,
         temp_result.speed = sqrt(velocity_x * velocity_x + velocity_y * velocity_y + velocity_z * velocity_z);
 
         //std::cout<<"gnss:"<<gps_time_str<<std::endl;
-        result = temp_result;
-        capture_num++;
+        {
+            std::lock_guard<std::mutex> lock(result_mutex_);
+            result_ = std::move(temp_result);
+            ++capture_num_;
+        }
     
 }
 
-// 信号处理函数：确保程序退出时关闭文件
-void GnssOutput::signalHandler(int signum)
+bool GnssOutput::latest(Gnss_result* output, int* sequence) const
 {
-    ROS_INFO("Closing file...");
-    ros::shutdown();
-}
-
-// 启动同步功能
-void GnssOutput::start()
-{
-    signal(SIGINT, GnssOutput::signalHandler);
-
-    ros::AsyncSpinner spinner(2); // 启动两个线程
-    spinner.start();
-
-    while (ros::ok()) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(1)); // 示例：保持循环运行
-    }
-
-    spinner.stop();
-}
-
-
-void GnssOutput::start1()
-{
-    signal(SIGINT, GnssOutput::signalHandler);
-    // 使用单线程运行 ROS 节点
+    if (output == nullptr) return false;
+    std::lock_guard<std::mutex> lock(result_mutex_);
+    if (capture_num_ == 0) return false;
+    *output = result_;
+    if (sequence != nullptr) *sequence = capture_num_;
+    return true;
 }

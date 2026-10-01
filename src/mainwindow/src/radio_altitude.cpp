@@ -161,18 +161,32 @@ void SensorDataReceiver::record_radio_altitude()
     // 调用流式解析，如果返回 true，说明 new_height 被更新为最新值
     if (readAndDecodeData(new_height))
     {
-        Radio_result temp_result;
+        Radio_result temp_result{};
         temp_result.altitude = new_height;
-        temp_result.gps_time = gps_time_str; 
-        
-        // 更新类成员 result
-        // 在多线程环境下，如果 result 被其他线程读取，这里最好加锁
-        result = temp_result;
+        {
+            std::lock_guard<std::mutex> lock(result_mutex_);
+            temp_result.gps_time = gps_time_str_;
+            result_ = std::move(temp_result);
+        }
         
         // Debug 输出可选
         // std::cout << "Updated Alt: " << new_height << std::endl;
     }
     // 如果返回 false，说明没有新数据，result 保持上一次的值，不做修改
+}
+
+bool SensorDataReceiver::latest(Radio_result* output) const
+{
+    if (output == nullptr) return false;
+    std::lock_guard<std::mutex> lock(result_mutex_);
+    *output = result_;
+    return true;
+}
+
+void SensorDataReceiver::setGpsTime(const std::string& gps_time)
+{
+    std::lock_guard<std::mutex> lock(result_mutex_);
+    gps_time_str_ = gps_time;
 }
 
 void SensorDataReceiver::capture_serial_thread()
@@ -205,4 +219,5 @@ void SensorDataReceiver::stop_thread()
     {
         capture_thread->join();
     }
+    capture_thread.reset();
 }

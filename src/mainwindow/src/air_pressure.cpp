@@ -7,22 +7,22 @@
 
 
 AirPressureSensor::AirPressureSensor(const std::string &port, int baudrate)
-:port_(port), baudrate_(baudrate),capture_thread_flag(true),
+:port_(port), baudrate_(baudrate),capture_thread_flag(false),
 headerFrame({0x01, 0x8F, 0x30, 0x30, 0x30, 0x30, 0x0D})
 {
     //memset(r_buffer, 0, sizeof(r_buffer));
 
-    mresult.altitude_a = -1;
-    mresult.altitude_b = -1;
-    mresult.pressure_a = -1;
-    mresult.rate = -1;
+    result_.altitude_a = -1;
+    result_.altitude_b = -1;
+    result_.pressure_a = -1;
+    result_.rate = -1;
     initial_height = 0;
     is_first_frame = true;
 }
 
 AirPressureSensor::~AirPressureSensor()
 {
-    //关闭文件流
+    stop_thread();
     if (ser.isOpen()) 
     {
         ser.close();
@@ -93,10 +93,14 @@ float AirPressureSensor::decodeHexToFloat(const char* hexData)
     }
 
     // 将编码后的字符串转换为十六进制整数
-    int32_t hexValue = strtol(encodedStr.c_str(), NULL, 16);
+    const uint32_t raw_bits = static_cast<uint32_t>(
+        strtoul(encodedStr.c_str(), nullptr, 16));
 
-    // 将十六进制整数转换为浮点数（IEEE 754格式）
-    return *(float*)&hexValue;
+    // memcpy avoids violating C++ strict-aliasing rules while preserving IEEE-754 bits.
+    float value = 0.0F;
+    static_assert(sizeof(value) == sizeof(raw_bits), "32-bit float is required");
+    std::memcpy(&value, &raw_bits, sizeof(value));
+    return value;
 }
 
 bool AirPressureSensor::checkHeaderFrame(const std::vector<unsigned char> buffer, size_t bufferSize)
@@ -129,8 +133,11 @@ bool AirPressureSensor::checkHeaderFrame(const std::vector<unsigned char> buffer
 void AirPressureSensor::decodeAndFormatData(size_t available_data)
 { 
     try{
-        AirPressure_result temp_result;
-        temp_result.gps_time_str = gps_time_str;
+        AirPressure_result temp_result{};
+        {
+            std::lock_guard<std::mutex> lock(result_mutex_);
+            temp_result.gps_time_str = gps_time_str_;
+        }
         for (size_t i = 0; i < available_data - 1; i++) {//i < available_data
             // 查找帧头
             if (r_buffer[i] == 0x01) 
@@ -205,13 +212,30 @@ void AirPressureSensor::decodeAndFormatData(size_t available_data)
                 }
             }      
         }
-        mresult = temp_result;
+        {
+            std::lock_guard<std::mutex> lock(result_mutex_);
+            result_ = std::move(temp_result);
+        }
     }
     catch (std::exception& e) 
     {
         std::cerr << "读取或解析串口数据时发生异常： " << std::endl;
     }
 
+}
+
+bool AirPressureSensor::latest(AirPressure_result* output) const
+{
+    if (output == nullptr) return false;
+    std::lock_guard<std::mutex> lock(result_mutex_);
+    *output = result_;
+    return true;
+}
+
+void AirPressureSensor::setGpsTime(const std::string& gps_time)
+{
+    std::lock_guard<std::mutex> lock(result_mutex_);
+    gps_time_str_ = gps_time;
 }
 bool AirPressureSensor::initializeSerial()
 {
@@ -249,6 +273,7 @@ void AirPressureSensor::capture_serial_thread()
 void AirPressureSensor::start_thread()
 {
     if (!capture_thread) {
+        capture_thread_flag = true;
         capture_thread = std::make_unique<std::thread>(&AirPressureSensor::capture_serial_thread, this);
     }
 }
@@ -260,4 +285,5 @@ void AirPressureSensor::stop_thread()
     {
         capture_thread->join();
     }
+    capture_thread.reset();
 }

@@ -95,9 +95,9 @@ QNode::~QNode()
     if(mThreadPointcloud!=nullptr)
     {
         mThreadPointcloud->thread_flag = false;
-        mThreadPointcloud->deleteLater();
         mThread.quit();
         mThread.wait();
+        delete mThreadPointcloud;
         mThreadPointcloud = nullptr;
     }
     std::cout<<"qnode析构"<<std::endl;
@@ -168,15 +168,14 @@ bool QNode::init()
     //gimbal_controller->ser_.close();
     
     gnss_output = new GnssOutput(nh);
-        // 启动GNSS处理线程
-    std::thread(&GnssOutput::start, gnss_output).detach();
+    /* QNode owns ROS callback dispatch through spinOnce().  A detached spinner
+     * would race object destruction and process the same callback queue twice. */
     connect_gnss = true;
 
     point_capture = new PointCapture(nh);
     connect_point = true;
 
     rtsp_capture = new RTSPCapture();
-    rtsp_capture->camera_mode = gimbal_controller->CAMERA_MODE;
     rtsp_capture->share_cameramode = &camera_mode;
     emit sig_update_status_bar("正在初始化视频流");
     if (!rtsp_capture->initVideoCapture()) {
@@ -248,7 +247,9 @@ void QNode::run()
 {
     if(!init())
     {
-        gimbal_controller->ser_.close();
+        if (gimbal_controller != nullptr && gimbal_controller->ser_.isOpen()) {
+            gimbal_controller->ser_.close();
+        }
         emit rosShutdown();
         emit sig_qnode_finished();
         return;
@@ -273,20 +274,41 @@ void QNode::run()
     
     while (ros::ok()) 
     {
-        if(keep_transmitting)//如果保持数据传输
+        if(keep_transmitting.load())//如果保持数据传输
         {
             // 处理ROS回调 GNSS
             ros::spinOnce();
-            gps_time_str = get_current_time_string();
-            //if(rtsp_capture->capture_num > previous_capture_num && gnss_output->capture_num > previous_capture_num_gnss)//通过吊舱采集的频率控制整体数据的采集频率
+            {
+                std::lock_guard<std::mutex> lock(gps_time_mutex_);
+                gps_time_str = get_current_time_string();
+            }
             {
                 auto start = std::chrono::steady_clock::now();
-                previous_capture_num = rtsp_capture->capture_num;
-                previous_capture_num_gnss = gnss_output->capture_num ;
-                
-                if(previous_capture_num_gnss > 0) //代表GNSS初始化成功 如果没有GNSS 那就也用电脑的时间
+                previous_capture_num = rtsp_capture->capture_num.load();
+                Gnss_result gnss_snapshot{};
+                int gnss_sequence = 0;
+                const bool has_gnss = gnss_output->latest(&gnss_snapshot, &gnss_sequence);
+                previous_capture_num_gnss = gnss_sequence;
+
+                if(has_gnss)
                 {
-                    gps_time_str = gnss_output->result.gps_time; 
+                    std::lock_guard<std::mutex> lock(gps_time_mutex_);
+                    gps_time_str = gnss_snapshot.gps_time;
+                }
+
+                Gimbal_result gimbal_snapshot{};
+                AirPressure_result air_snapshot{};
+                Radio_result radio_snapshot{};
+                if (connect_gimbal && gimbal_controller->latest(&gimbal_snapshot)) {
+                    gimbal_snapshot.gps_time_str = latestGpsTime();
+                }
+                if (connect_air_pressure) {
+                    airpressure_sensor->setGpsTime(latestGpsTime());
+                    (void)airpressure_sensor->latest(&air_snapshot);
+                }
+                if (connect_radio_altitude) {
+                    radio_altitude->setGpsTime(latestGpsTime());
+                    (void)radio_altitude->latest(&radio_snapshot);
                 }
                 
                 /*-------------吊舱图片----------*/
@@ -304,37 +326,44 @@ void QNode::run()
                 if(send_GNSS)
                 {
                     //更新GNSS信息显示
-                    emit sig_update_GNSS_result(gnss_output->result);
+                    if (has_gnss) emit sig_update_GNSS_result(gnss_snapshot);
                 }
                 /*--------吊舱串口数据-----------*/
                 if(connect_gimbal)
                 {
-                    gimbal_controller->result.gps_time_str = gps_time_str;
                     //用解析的信息改变仪表
-                    emit sig_update_gimbal_result(gimbal_controller->result);
+                    emit sig_update_gimbal_result(gimbal_snapshot);
                 }
                 /*---------气压高度计------------*/
                 if(connect_air_pressure)
                 {
-                    airpressure_sensor->gps_time_str = gps_time_str; //pinglvguokuai suoyi bunneng fuzhi gei mresult 
                     if(send_barometric_altimeter)
                     {
-                        emit sig_update_airPressure_result(airpressure_sensor->mresult);
+                        emit sig_update_airPressure_result(air_snapshot);
                     }
                 }
                 if(connect_radio_altitude)
                 {
-                    radio_altitude->gps_time_str = gps_time_str;
                     if(send_radio_altimeter)
                     {
-                        emit sig_update_radio_altitude_result(radio_altitude->result);
+                        emit sig_update_radio_altitude_result(radio_snapshot);
                     }
                 }
-                if(save_flag)
+                if(save_flag.load())
                 {
                     cv::Mat latest_frame;
                     if (rtsp_capture->latestFrame(&latest_frame)) {
-                        save_data(latest_frame, gimbal_controller->result, gnss_output->result, airpressure_sensor->mresult, radio_altitude->result, point_capture->now_cloud);
+                        pcl::PointCloud<pcl::PointXYZ> point_snapshot;
+                        int point_sequence = 0;
+                        if (point_capture->latest(&point_snapshot, &point_sequence) &&
+                            point_sequence > previous_capture_num_point) {
+                            previous_capture_num_point = point_sequence;
+                        } else {
+                            point_snapshot.clear();
+                        }
+                        save_data(latest_frame, gimbal_snapshot, gnss_snapshot,
+                                  air_snapshot, radio_snapshot,
+                                  point_snapshot);
                     }
                     img_num++;
                     //更新界面的保存图片数量
@@ -362,13 +391,13 @@ void QNode::run()
             }
         }
 
-        if((!keep_transmitting)&&(!close_flag))//如果是暂停了
+        if((!keep_transmitting.load())&&(!close_flag.load()))//如果是暂停了
         {
             usleep(100000);//休眠100ms
         }
        
         //界面关闭时，退出循环
-        if(close_flag)
+        if(close_flag.load())
         {
             std::cout<<"收到关闭信号"<<std::endl;
             break;
@@ -518,7 +547,7 @@ void QNode::save_data(cv::Mat &frame, Gimbal_result& gimabal_result, Gnss_result
     if(connect_rtsp)
     {
         std::stringstream filename_photo;
-        filename_photo << aset_path[0] << "/photo_" << gps_time_str << ".jpg";
+        filename_photo << aset_path[0] << "/photo_" << latestGpsTime() << ".jpg";
         //std::cout<<filename_photo.str()<<std::endl;
         cv::imwrite(filename_photo.str(), frame);
     }
@@ -538,7 +567,7 @@ void QNode::save_data(cv::Mat &frame, Gimbal_result& gimabal_result, Gnss_result
     if(connect_point)
     {
         std::stringstream filename_point;
-        filename_point << aset_path[2] << "/" << gps_time_str << ".ply";
+        filename_point << aset_path[2] << "/" << latestGpsTime() << ".ply";
         save_point_data(point, filename_point.str());
         // test_1117
         // std::cout << "点云name：" << filename_point.str()  << std::endl;
@@ -663,10 +692,8 @@ void QNode::save_radio_data(Radio_result &radio_result, std::string path)
 
 void QNode::save_point_data(pcl::PointCloud<pcl::PointXYZ> &point, std::string path)
 {
-    if(connect_point && (point_capture->capture_num > previous_capture_num_point))//避免雷达断开了还一直在存同一帧 因为点云比较大
+    if(connect_point && !point.empty())
     {
-        previous_capture_num_point = point_capture->capture_num;
-
         //直接在该线程中存储会导致拖慢整体进度
         // if(point.points.size())
         // {
@@ -700,7 +727,8 @@ std::string QNode::get_current_time_string()
 
     // 3. 转换为本地时间的 tm 结构
     // 注意：localtime 不是线程安全的，在多线程环境中应使用 localtime_s 或 localtime_r
-    std::tm now_tm = *std::localtime(&now_time_t);
+    std::tm now_tm{};
+    localtime_r(&now_time_t, &now_tm);
 
     // 4. 获取毫秒部分
     // 获取从纪元开始到当前时间点的毫秒数
@@ -712,4 +740,10 @@ std::string QNode::get_current_time_string()
         << '.' << std::setfill('0') << std::setw(3) << ms.count(); // 补齐3位毫秒
 
     return oss.str();
+}
+
+std::string QNode::latestGpsTime() const
+{
+    std::lock_guard<std::mutex> lock(gps_time_mutex_);
+    return gps_time_str;
 }

@@ -65,9 +65,7 @@ public:
     std::unique_ptr<std::thread> capture_thread;//采集
     std::atomic<int> capture_num;//抓取图片的数量
 
-    int camera_mode;//相机状态
-
-    int* share_cameramode;
+    std::atomic<int>* share_cameramode{nullptr};
 };
 
 

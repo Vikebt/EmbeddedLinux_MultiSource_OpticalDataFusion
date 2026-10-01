@@ -54,8 +54,7 @@ class GnssOutput
 public:
     GnssOutput(ros::NodeHandle& nh);
     ~GnssOutput();
-    void start();  // 启动同步和数据记录功能
-    void start1();  // 启动同步和数据记录功能
+    bool latest(Gnss_result* output, int* sequence = nullptr) const;
 private:
     
     std::ostringstream file_name;
@@ -80,19 +79,13 @@ private:
                           const geometry_msgs::TwistStampedConstPtr& vel_msg);
 
     
-    static void signalHandler(int signum);
 public:
-    int gnss_flag; // 用于标记GNSS状态的全局变量
-    std::mutex gnss_flag_mutex;
+    int gnss_flag;
 
-    std::string gps_time_str;  // 用于保存GPS时间
-    //std::string message;//GNSS输出的所有信息
-
-    int num;//获取gnss信息的数量
-
-    Gnss_result result;
-
-    int capture_num;//抓取的信息数量
+private:
+    mutable std::mutex result_mutex_;
+    Gnss_result result_{};
+    int capture_num_{0};
 
 };
 

@@ -6,7 +6,7 @@
 
 // Constructor implementation
 GimbalController::GimbalController(ros::NodeHandle& nh) : nh_(nh),
-capture_thread_flag(true)
+capture_thread_flag(false)
 {
     photo_data = {0xFF, 0x01, 0x12, 0x00, 0x00, 0x00, 0x13};  
     start_video_data = {0xFF, 0x01, 0x12, 0x01, 0x00, 0x00, 0x14};  
@@ -34,7 +34,7 @@ capture_thread_flag(true)
 
 GimbalController::~GimbalController()
 {
-
+    stop_thread();
     if (ser_.isOpen())
     {
         ser_.close();
@@ -153,7 +153,7 @@ void GimbalController::decodeData(const std::vector<uint8_t>& received_data)
         std::cerr << "Data frame is too short." << std::endl;
         return;
     }
-    Gimbal_result temp_result;
+    Gimbal_result temp_result{};
     temp_result.gps_time_str = "";
     // 开始解码数据帧
     // 激光测距距离，单位分米
@@ -231,8 +231,19 @@ void GimbalController::decodeData(const std::vector<uint8_t>& received_data)
     uint8_t received_checksum = received_data[28];
     temp_result.received_checksum = received_checksum;
 
-    result = temp_result;
+    {
+        std::lock_guard<std::mutex> lock(result_mutex_);
+        result_ = std::move(temp_result);
+    }
 
+}
+
+bool GimbalController::latest(Gimbal_result* output) const
+{
+    if (output == nullptr) return false;
+    std::lock_guard<std::mutex> lock(result_mutex_);
+    *output = result_;
+    return true;
 }
 
 std::vector<uint8_t> GimbalController::generateAngleCommand(int angle, bool is_pitch)
@@ -392,7 +403,7 @@ bool GimbalController::set_gimbal_config(gimbal_config para_)
         sendData(visible_light_mode, status_msg);
         ROS_INFO("Switched to visible light mode.");
         ros::Duration(2).sleep();
-        *share_cameramode = 0;
+        if (share_cameramode != nullptr) share_cameramode->store(0);
     }
     else if (para_.camera_mode == 1)
     {
@@ -401,7 +412,7 @@ bool GimbalController::set_gimbal_config(gimbal_config para_)
         sendData(infrared_mode, status_msg);
         ROS_INFO("Switched to infrared mode.");
         ros::Duration(2).sleep();
-        *share_cameramode = 1;
+        if (share_cameramode != nullptr) share_cameramode->store(1);
     }
    
     //设置角度
@@ -593,6 +604,7 @@ void GimbalController::capture_serial_thread()
 void GimbalController::start_thread()
 {
     if (!capture_thread) {
+        capture_thread_flag = true;
         capture_thread = std::make_unique<std::thread>(&GimbalController::capture_serial_thread, this);
     }
 }
@@ -603,4 +615,5 @@ void GimbalController::stop_thread()
     {
         capture_thread->join();
     }
+    capture_thread.reset();
 }

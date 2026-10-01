@@ -8,6 +8,8 @@
 #include <cstdlib>  // for strtol
 #include <cstring>  // for memcpy
 #include <thread>
+#include <atomic>
+#include <mutex>
 
 struct AirPressure_result
 {
@@ -31,19 +33,22 @@ public:
 
     //std::string data;//解码数据
     
-    AirPressure_result mresult;
-    std::string gps_time_str;
+    bool latest(AirPressure_result* output) const;
+    void setGpsTime(const std::string& gps_time);
 
     //抓取串口数据线程
     std::unique_ptr<std::thread> capture_thread;
     void capture_serial_thread();
-    bool capture_thread_flag;
+    std::atomic<bool> capture_thread_flag;
     //开始线程运行
     void start_thread();
     //停止线程
     void stop_thread();
 
 private:
+    mutable std::mutex result_mutex_;
+    AirPressure_result result_{};
+    std::string gps_time_str_;
     // 串口相关
     serial::Serial ser;
     std::string port_;

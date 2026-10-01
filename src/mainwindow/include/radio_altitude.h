@@ -7,6 +7,7 @@
 #include <vector> // 必须包含 vector
 #include <thread>
 #include <mutex>  // 推荐加上锁保护数据
+#include <atomic>
 #include <serial/serial.h>
 
 struct Radio_result
@@ -30,9 +31,8 @@ public:
     // 初始化串口
     bool initializeSerial();
 
-    // 对外暴露的结果
-    Radio_result result;
-    std::string gps_time_str; // 注意：需要外部或其他逻辑来更新这个时间字符串
+    bool latest(Radio_result* output) const;
+    void setGpsTime(const std::string& gps_time);
 
     // 抓取串口数据线程管理
     void start_thread();
@@ -49,7 +49,10 @@ private:
 
     // 线程相关
     std::unique_ptr<std::thread> capture_thread;
-    bool capture_thread_flag;
+    std::atomic<bool> capture_thread_flag;
+    mutable std::mutex result_mutex_;
+    Radio_result result_{};
+    std::string gps_time_str_;
     void capture_serial_thread();
 
     // --- 内部辅助函数 ---

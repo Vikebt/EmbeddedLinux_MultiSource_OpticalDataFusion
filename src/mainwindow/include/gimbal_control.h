@@ -19,6 +19,8 @@
 #include <queue>
 #include <stack> 
 #include <condition_variable>
+#include <atomic>
+#include <mutex>
 #include <yaml-cpp/yaml.h>
 #include "gnss_output.h" 
 
@@ -81,11 +83,11 @@ public:
     ros::Publisher status_pub_;
     serial::Serial ser_;
 
-    Gimbal_result result;//吊舱当前状态的角度结果
+    bool latest(Gimbal_result* output) const;
     //抓取串口数据线程
     std::unique_ptr<std::thread> capture_thread;
     void capture_serial_thread();
-    bool capture_thread_flag;
+    std::atomic<bool> capture_thread_flag;
 
     //开始线程
     void start_thread();
@@ -93,6 +95,8 @@ public:
 
 private:    
     ros::NodeHandle& nh_;
+    mutable std::mutex result_mutex_;
+    Gimbal_result result_{};
 
     std::string getCurrentTimeForFilename();//获取当前时间 未用到
     void printCurrentTime();//打印当前时间
@@ -109,7 +113,7 @@ public:
     int FOCUS;//相机焦距 
     int previous_focus;//上一次的相机焦距
     
-    int* share_cameramode;
+    std::atomic<int>* share_cameramode{nullptr};
 
     // 十六进制数组指令
     std::vector<uint8_t> photo_data;  

@@ -18,6 +18,8 @@
 #include <QThread>
 #include <QMutex>
 #include <QQueue>
+#include <atomic>
+#include <mutex>
 
 
 class QNode:public QObject
@@ -53,6 +55,7 @@ public:
     void save_point_data(pcl::PointCloud<pcl::PointXYZ>& point, std::string path); 
     //获取当前时间
     std::string get_current_time_string();
+    std::string latestGpsTime() const;
 
 signals:
     void rosShutdown();
@@ -81,7 +84,7 @@ public slots:
 public:
     YamlConfig yaml_config;
     YAML::Node config;//读来的参数
-    int camera_mode;//共享的变量
+    std::atomic<int> camera_mode;//共享的变量
 
     GimbalController* gimbal_controller = nullptr;
     GnssOutput* gnss_output = nullptr;
@@ -91,30 +94,28 @@ public:
     PointCapture* point_capture = nullptr;
     
     //传感器初始化流程完成标志(不保证都成功)
-    bool connect_succeed;
+    std::atomic<bool> connect_succeed;
     //保存信息标志位
-    bool save_flag;
-    //gnss获取到的时间
-    std::string gps_time_str;
+    std::atomic<bool> save_flag;
     //用于控制传输状态
-    bool keep_transmitting;
+    std::atomic<bool> keep_transmitting;
     //图片数量
     int img_num;
     //结束线程标志
-    bool close_flag;
+    std::atomic<bool> close_flag;
     //是否发送GNSS信息
-    bool send_GNSS;
+    std::atomic<bool> send_GNSS;
     //是否发送无线电高度计信息
-    bool send_radio_altimeter;
+    std::atomic<bool> send_radio_altimeter;
     //是否发送气压高度计信息
-    bool send_barometric_altimeter;
+    std::atomic<bool> send_barometric_altimeter;
 
-    bool connect_gimbal;//吊舱是否成功初始化
-    bool connect_rtsp;//图像是否成功初始化
-    bool connect_gnss;//gnss是否会成功初始化
-    bool connect_radio_altitude;//无线电高度计是否成功初始化
-    bool connect_air_pressure;//气压高度计是否成功初始化
-    bool connect_point;//lidar是否成功初始化
+    std::atomic<bool> connect_gimbal;//吊舱是否成功初始化
+    std::atomic<bool> connect_rtsp;//图像是否成功初始化
+    std::atomic<bool> connect_gnss;//gnss是否会成功初始化
+    std::atomic<bool> connect_radio_altitude;//无线电高度计是否成功初始化
+    std::atomic<bool> connect_air_pressure;//气压高度计是否成功初始化
+    std::atomic<bool> connect_point;//lidar是否成功初始化
 
     int previous_capture_num;//之前抓到的图片数量 用于判断是否抓到新的图片
     int previous_capture_num_gnss;//之前抓到的GNSS数量 用于判断是否抓到新的GNSS信息
@@ -145,6 +146,8 @@ public:
 private:
     int init_argc;
     char** init_argv;
+    mutable std::mutex gps_time_mutex_;
+    std::string gps_time_str;
 
 };
 #endif // QNODE_H

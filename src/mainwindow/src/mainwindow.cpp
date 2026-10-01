@@ -13,74 +13,74 @@
 
 MainWindow::MainWindow(int argc, char** argv, QWidget *parent) :
     QMainWindow(parent),
-    first_connect(true),    // ±êÖ¾Î»£ºÊÇ·ñÊÇµÚÒ»´ÎÁ¬½Ó£¬ÓÃÓÚ³õÊ¼»¯ROSÇı¶¯
+    first_connect(true),    // æ ‡å¿—ä½ï¼šæ˜¯å¦æ˜¯ç¬¬ä¸€æ¬¡è¿æ¥ï¼Œç”¨äºåˆå§‹åŒ–ROSé©±åŠ¨
     focus(1),
     timerId(0),
     ui(new Ui::MainWindow)
 {
-    // UI³õÊ¼»¯ºÍ¶¨Ê±Æ÷
+    // UIåˆå§‹åŒ–å’Œå®šæ—¶å™¨
     ui->setupUi(this);
-    timerId = startTimer(0);    // Æô¶¯¶¨Ê±Æ÷£¬0ms ±íÊ¾¾¡¿ÉÄÜ¿ìµØ´¥·¢ timerEvent£¬Í¨³£ÓÃÓÚUIË¢ĞÂ
+    timerId = startTimer(0);    // å¯åŠ¨å®šæ—¶å™¨ï¼Œ0ms è¡¨ç¤ºå°½å¯èƒ½å¿«åœ°è§¦å‘ timerEventï¼Œé€šå¸¸ç”¨äºUIåˆ·æ–°
 
     //qnode 
-	// QNodeÏß³ÌµÄ´´½¨ºÍ¹ÜÀí£¨ºËĞÄ£¡£©
-    // 1. ´´½¨QNode¶ÔÏó£¬´«µİÃüÁîĞĞ²ÎÊı
+	// QNodeçº¿ç¨‹çš„åˆ›å»ºå’Œç®¡ç†ï¼ˆæ ¸å¿ƒï¼ï¼‰
+    // 1. åˆ›å»ºQNodeå¯¹è±¡ï¼Œä¼ é€’å‘½ä»¤è¡Œå‚æ•°
     qnode = new QNode(argc, argv);
-    // 2. ´´½¨ÎÄ¼ş¼Ğ½á¹¹£¨Êı¾İ´æ´¢×¼±¸£©
-    create_top_folder();    // ´´½¨±¾´ÎÔËĞĞµÄ¶¥²ãÎÄ¼ş¼Ğ
-    create_folder();    // ´´½¨×ÓÎÄ¼ş¼Ğ£¨ÕÕÆ¬¡¢Êı¾İ¡¢µãÔÆ£©
-    // 3. ½«QNode¶ÔÏóÒÆ¶¯µ½×¨ÓÃÏß³Ì
+    // 2. åˆ›å»ºæ–‡ä»¶å¤¹ç»“æ„ï¼ˆæ•°æ®å­˜å‚¨å‡†å¤‡ï¼‰
+    create_top_folder();    // åˆ›å»ºæœ¬æ¬¡è¿è¡Œçš„é¡¶å±‚æ–‡ä»¶å¤¹
+    create_folder();    // åˆ›å»ºå­æ–‡ä»¶å¤¹ï¼ˆç…§ç‰‡ã€æ•°æ®ã€ç‚¹äº‘ï¼‰
+    // 3. å°†QNodeå¯¹è±¡ç§»åŠ¨åˆ°ä¸“ç”¨çº¿ç¨‹
     qnode->moveToThread(&qthread_node); 
-    // 4. Á¬½ÓÆô¶¯ĞÅºÅ£¨½«ĞÅºÅ·¢ÉäÑÓ³Ùµ½Ïß³ÌÆô¶¯ºó£©
+    // 4. è¿æ¥å¯åŠ¨ä¿¡å·ï¼ˆå°†ä¿¡å·å‘å°„å»¶è¿Ÿåˆ°çº¿ç¨‹å¯åŠ¨åï¼‰
     //connect(&qthread_node, &QThread::finished, qnode, &QObject::deleteLater);
     connect(this, &MainWindow::sig_start_qnode, qnode, &QNode::run);
-    // 5. Á¬½ÓQNodeÍê³ÉĞÅºÅ
+    // 5. è¿æ¥QNodeå®Œæˆä¿¡å·
     connect(qnode, SIGNAL(sig_qnode_finished()), this, SLOT(slot_qnode_finished()));
-    // 6. Á¬½ÓÍ¼Ïñ¸üĞÂĞÅºÅ£¨¿çÏß³Ì´«µİQImage£©
+    // 6. è¿æ¥å›¾åƒæ›´æ–°ä¿¡å·ï¼ˆè·¨çº¿ç¨‹ä¼ é€’QImageï¼‰
     //connect(&qnode,&QNode::rosShutdown,this,&MainWindow::close);
-    connect(qnode, SIGNAL(sig_update_image(QImage)), this, SLOT(slot_update_image(QImage)));//¸üĞÂÍ¼Æ¬ÏÔÊ¾
-    //connect(qnode, SIGNAL(sig_update_GNSS_Message(std::string)), this, SLOT(slot_update_GNSS_Message(std::string)));//¸üĞÂGNSSÏÔÊ¾
-    // 7. ×¢²á×Ô¶¨ÒåÀàĞÍµÄÔªÀàĞÍĞÅÏ¢£¨±ØĞë£¡ÓÃÓÚ¿çÏß³ÌĞÅºÅ²Û£©
+    connect(qnode, SIGNAL(sig_update_image(QImage)), this, SLOT(slot_update_image(QImage)));//æ›´æ–°å›¾ç‰‡æ˜¾ç¤º
+    //connect(qnode, SIGNAL(sig_update_GNSS_Message(std::string)), this, SLOT(slot_update_GNSS_Message(std::string)));//æ›´æ–°GNSSæ˜¾ç¤º
+    // 7. æ³¨å†Œè‡ªå®šä¹‰ç±»å‹çš„å…ƒç±»å‹ä¿¡æ¯ï¼ˆå¿…é¡»ï¼ç”¨äºè·¨çº¿ç¨‹ä¿¡å·æ§½ï¼‰
     qRegisterMetaType<Gnss_result>("Gnss_result");
     qRegisterMetaType<Gimbal_result>("Gimbal_result");
     qRegisterMetaType<AirPressure_result>("AirPressure_result");
     qRegisterMetaType<std::string>("std::string");
     qRegisterMetaType<Radio_result>("Radio_result");
-    // 8. Á¬½Ó¸÷ÖÖÊı¾İ¸üĞÂĞÅºÅ
-    connect(qnode, SIGNAL(sig_update_GNSS_result(Gnss_result)), this, SLOT(slot_update_GNSS_result(Gnss_result)));;//¸üĞÂ¹ßµ¼×´Ì¬ĞÅÏ¢
-    connect(qnode, SIGNAL(sig_update_gimbal_result(Gimbal_result)), this, SLOT(slot_update_gimbal_result(Gimbal_result)));//¸üĞÂµõ²ÕÒÇ±íĞÅÏ¢
-    connect(qnode, SIGNAL(sig_update_airPressure_result(AirPressure_result)), this, SLOT(slot_update_airPressure_result(AirPressure_result)));//¸üĞÂÆøÑ¹¼ÆÒÇ±íĞÅÏ¢
-    connect(qnode, SIGNAL(sig_update_airPressure_status(std::string)), this, SLOT(slot_update_airPressure_status(std::string)));//¸üĞÂÆøÑ¹¼ÆÏûÏ¢À¸
-    //connect(qnode, SIGNAL(sig_update_air_pressure_message(std::string)), this, SLOT(slot_update_air_pressure_message(std::string)));//¸üĞÂÆøÑ¹¸ß¶È¼ÆÏÔÊ¾
-    //connect(qnode, SIGNAL(sig_update_radio_altitude_message(float)), this, SLOT(slot_update_radio_altitude_message(float)));//¸üĞÂÎŞÏßµç¸ß¶È¼ÆÏÔÊ¾
-    connect(qnode, SIGNAL(sig_update_radio_altitude_result(Radio_result)), this, SLOT(slot_update_radio_altitude_result(Radio_result)));//¸üĞÂÎŞÏßµç¸ß¶È¼ÆÏÔÊ¾
-    // 9. Á¬½Ó×´Ì¬¸üĞÂĞÅºÅ
-    connect(qnode, SIGNAL(sig_update_status_bar(QString)), this, SLOT(slot_update_status_bar(QString)));//¸üĞÂ×´Ì¬À¸
-    connect(qnode, SIGNAL(sig_update_label_image_num(int)), this, SLOT(slot_update_label_image_num(int)));//¸üĞÂÍ¼Æ¬ÊıÁ¿
+    // 8. è¿æ¥å„ç§æ•°æ®æ›´æ–°ä¿¡å·
+    connect(qnode, SIGNAL(sig_update_GNSS_result(Gnss_result)), this, SLOT(slot_update_GNSS_result(Gnss_result)));;//æ›´æ–°æƒ¯å¯¼çŠ¶æ€ä¿¡æ¯
+    connect(qnode, SIGNAL(sig_update_gimbal_result(Gimbal_result)), this, SLOT(slot_update_gimbal_result(Gimbal_result)));//æ›´æ–°åŠèˆ±ä»ªè¡¨ä¿¡æ¯
+    connect(qnode, SIGNAL(sig_update_airPressure_result(AirPressure_result)), this, SLOT(slot_update_airPressure_result(AirPressure_result)));//æ›´æ–°æ°”å‹è®¡ä»ªè¡¨ä¿¡æ¯
+    connect(qnode, SIGNAL(sig_update_airPressure_status(std::string)), this, SLOT(slot_update_airPressure_status(std::string)));//æ›´æ–°æ°”å‹è®¡æ¶ˆæ¯æ 
+    //connect(qnode, SIGNAL(sig_update_air_pressure_message(std::string)), this, SLOT(slot_update_air_pressure_message(std::string)));//æ›´æ–°æ°”å‹é«˜åº¦è®¡æ˜¾ç¤º
+    //connect(qnode, SIGNAL(sig_update_radio_altitude_message(float)), this, SLOT(slot_update_radio_altitude_message(float)));//æ›´æ–°æ— çº¿ç”µé«˜åº¦è®¡æ˜¾ç¤º
+    connect(qnode, SIGNAL(sig_update_radio_altitude_result(Radio_result)), this, SLOT(slot_update_radio_altitude_result(Radio_result)));//æ›´æ–°æ— çº¿ç”µé«˜åº¦è®¡æ˜¾ç¤º
+    // 9. è¿æ¥çŠ¶æ€æ›´æ–°ä¿¡å·
+    connect(qnode, SIGNAL(sig_update_status_bar(QString)), this, SLOT(slot_update_status_bar(QString)));//æ›´æ–°çŠ¶æ€æ 
+    connect(qnode, SIGNAL(sig_update_label_image_num(int)), this, SLOT(slot_update_label_image_num(int)));//æ›´æ–°å›¾ç‰‡æ•°é‡
    // connect(qnode, SIGNAL(sig_update_label_time(QString)), this, SLOT(slot_update_label_time(QString)));
-    // 10. Á¬½ÓÉè±¸Á¬½Ó³É¹¦ĞÅºÅ
-    connect(qnode, SIGNAL(sig_connect_succeed()), this, SLOT(slot_connect_succeed()));//´«¸ĞÆ÷Á¬½Ó³É¹¦
-    connect(qnode, SIGNAL(sig_clear_message()), this, SLOT(slot_clear_message()));//Çå³ı½çÃæÉÏµÄplainTextEditÏÔÊ¾
-    connect(qnode, SIGNAL(sig_update_plainTextEdit_status(QString)), this, SLOT(slot_update_plainTextEdit_status(QString)));//¸üĞÂÏûÏ¢¿ò
+    // 10. è¿æ¥è®¾å¤‡è¿æ¥æˆåŠŸä¿¡å·
+    connect(qnode, SIGNAL(sig_connect_succeed()), this, SLOT(slot_connect_succeed()));//ä¼ æ„Ÿå™¨è¿æ¥æˆåŠŸ
+    connect(qnode, SIGNAL(sig_clear_message()), this, SLOT(slot_clear_message()));//æ¸…é™¤ç•Œé¢ä¸Šçš„plainTextEditæ˜¾ç¤º
+    connect(qnode, SIGNAL(sig_update_plainTextEdit_status(QString)), this, SLOT(slot_update_plainTextEdit_status(QString)));//æ›´æ–°æ¶ˆæ¯æ¡†
     qthread_node.start();
-    // 11. Æô¶¯Ïß³Ì£¨×¢Òâ£º´ËÊ±QNode::run()»¹Î´Ö´ĞĞ£©
-    // 1. ´´½¨ThreadControl¶ÔÏó£¬´«µİÊı¾İ´æ´¢Â·¾¶
+    // 11. å¯åŠ¨çº¿ç¨‹ï¼ˆæ³¨æ„ï¼šæ­¤æ—¶QNode::run()è¿˜æœªæ‰§è¡Œï¼‰
+    // 1. åˆ›å»ºThreadControlå¯¹è±¡ï¼Œä¼ é€’æ•°æ®å­˜å‚¨è·¯å¾„
     thread_control = new ThreadControl(qnode->top_folder_path);
-    // 2. ÒÆ¶¯µ½¿ØÖÆÏß³Ì
+    // 2. ç§»åŠ¨åˆ°æ§åˆ¶çº¿ç¨‹
     thread_control->moveToThread(&qthread_control);
-    // 3. Á¬½Ó¿ØÖÆÃüÁîĞÅºÅ£¨´ÓGUIµ½¿ØÖÆÏß³Ì£©
-    connect(this, &MainWindow::sig_start_control, thread_control, &ThreadControl::set_gimbal_config);//ÉèÖÃµõ²Õ²ÎÊı
-    connect(this, &MainWindow::sig_zoom_control, thread_control, &ThreadControl::set_gimbal_zoom);//µ¥²½µ÷½¹
-    connect(this, &MainWindow::sig_set_downward, thread_control, &ThreadControl::set_gimbol_down);//Ò»¼üÏòÏÂ
-    connect(this, &MainWindow::sig_set_center, thread_control, &ThreadControl::set_gimabl_center);//Ò»¼ü»ØÖĞ
-    // 4. Á¬½Ó¿ØÖÆÏß³ÌµÄ·´À¡ĞÅºÅ£¨»Ø´«µ½GUI£©
+    // 3. è¿æ¥æ§åˆ¶å‘½ä»¤ä¿¡å·ï¼ˆä»GUIåˆ°æ§åˆ¶çº¿ç¨‹ï¼‰
+    connect(this, &MainWindow::sig_start_control, thread_control, &ThreadControl::set_gimbal_config);//è®¾ç½®åŠèˆ±å‚æ•°
+    connect(this, &MainWindow::sig_zoom_control, thread_control, &ThreadControl::set_gimbal_zoom);//å•æ­¥è°ƒç„¦
+    connect(this, &MainWindow::sig_set_downward, thread_control, &ThreadControl::set_gimbol_down);//ä¸€é”®å‘ä¸‹
+    connect(this, &MainWindow::sig_set_center, thread_control, &ThreadControl::set_gimabl_center);//ä¸€é”®å›ä¸­
+    // 4. è¿æ¥æ§åˆ¶çº¿ç¨‹çš„åé¦ˆä¿¡å·ï¼ˆå›ä¼ åˆ°GUIï¼‰
     connect(thread_control, SIGNAL(sig_update_status_bar(QString)), this, SLOT(slot_update_status_bar(QString)));
-    connect(thread_control, SIGNAL(sig_update_plainTextEdit_status(QString)), this, SLOT(slot_update_plainTextEdit_status(QString)));//¸üĞÂÏûÏ¢¿ò
+    connect(thread_control, SIGNAL(sig_update_plainTextEdit_status(QString)), this, SLOT(slot_update_plainTextEdit_status(QString)));//æ›´æ–°æ¶ˆæ¯æ¡†
     connect(this, &MainWindow::sig_gimbol_focus_restore, thread_control, &ThreadControl::set_gimbol_focus_restore);
-    // 5. Á¬½Ó¿ØÖÆÍê³ÉĞÅºÅ
+    // 5. è¿æ¥æ§åˆ¶å®Œæˆä¿¡å·
     connect(thread_control, SIGNAL(set_gimbal_config_finished()), this, SLOT(slot_gimbal_config_finished()));
     connect(this, &MainWindow::sig_angle_control, thread_control,&ThreadControl::set_gimbol_angle);
-    // 6. Æô¶¯¿ØÖÆÏß³Ì
+    // 6. å¯åŠ¨æ§åˆ¶çº¿ç¨‹
     qthread_control.start();
 
     // qDebug() << QDir::currentPath();
@@ -94,14 +94,14 @@ MainWindow::MainWindow(int argc, char** argv, QWidget *parent) :
     ui->lineEdit_pitch->setText(QString::number(qnode->yaml_config.PITCH_ANGLE));
     ui->lineEdit_yaw->setText(QString::number(qnode->yaml_config.YAW_ANGLE));
 
-    //µõ²Õ²ÎÊı³õÊ¼»¯
+    //åŠèˆ±å‚æ•°åˆå§‹åŒ–
     gimbal_para.camera_mode = 0;
     gimbal_para.focus = 1;
     gimbal_para.pitch = ui->lineEdit_pitch->text().toInt();
     gimbal_para.roll = ui->lineEdit_roll->text().toInt();
     gimbal_para.yaw = ui->lineEdit_yaw->text().toInt();
 
-    //´®¿ÚÉèÖÃ¶Ô»°¿ò
+    //ä¸²å£è®¾ç½®å¯¹è¯æ¡†
     dlg_serial_setting = new DlgSerialSetting();
     connect(dlg_serial_setting,SIGNAL(sig_setserial_finished()), this, SLOT(slot_setserial_finished()));
 
@@ -111,7 +111,7 @@ MainWindow::MainWindow(int argc, char** argv, QWidget *parent) :
 
     //ui->spinBox_focus->setVisible(false);
 
-    //ui¿Ø¼şĞÅºÅºÍ²ÛµÄÁ¬½Ó
+    //uiæ§ä»¶ä¿¡å·å’Œæ§½çš„è¿æ¥
     connect(ui->action_connect,&QAction::triggered, this, &MainWindow::slot_action_connect_triggred);
     connect(ui->action_GNSS_reload,&QAction::triggered, this, &MainWindow::slot_action_GNSS_reload_triggred);
     connect(ui->action_serial_setting,&QAction::triggered, this, &MainWindow::slot_action_serial_setting_triggred);
@@ -134,7 +134,7 @@ MainWindow::MainWindow(int argc, char** argv, QWidget *parent) :
     connect(ui->btn_high_fusion, SIGNAL(clicked()), this, SLOT(slot_btn_high_fusion_clicked()));
 
 
-    //¾°ÏóÆ¥Åä
+    //æ™¯è±¡åŒ¹é…
     thread_sceneMatch = new ThreadSceneMatch();
     thread_sceneMatch->moveToThread(&qthread_sceneMatch);
     connect(this, &MainWindow::sig_start_image_match, thread_sceneMatch, &ThreadSceneMatch::match);
@@ -144,7 +144,7 @@ MainWindow::MainWindow(int argc, char** argv, QWidget *parent) :
 
     dlg_image_match_show = new DlgImageMatchShow();
 
-    //µØĞÎÆ¥Åä
+    //åœ°å½¢åŒ¹é…
     thread_terrainMatch = new ThreadTerrainMatch();
     thread_terrainMatch->moveToThread(&qthread_terrainMatch);
     connect(this, &MainWindow::sig_start_terrain_match, thread_terrainMatch, &ThreadTerrainMatch::match);
@@ -152,7 +152,7 @@ MainWindow::MainWindow(int argc, char** argv, QWidget *parent) :
     connect(thread_terrainMatch, &ThreadTerrainMatch::sig_match_finished, this, &MainWindow::slot_terrain_match_finished);
     qthread_terrainMatch.start();
 
-    //Ã¿200ms¸üĞÂÒ»´Î
+    //æ¯200msæ›´æ–°ä¸€æ¬¡
     timer_match = new QTimer(this);
     connect(timer_match, &QTimer::timeout, this, &MainWindow::update_match_result);
   
@@ -168,12 +168,12 @@ MainWindow::MainWindow(int argc, char** argv, QWidget *parent) :
 
     //timer_control = new QTimer(this);
     //connect(timer_control, &QTimer::timeout, this, &MainWindow::slot_control_angle);
-    //timer_control->start(60000); //1 ·ÖÖÓ
+    //timer_control->start(60000); //1 åˆ†é’Ÿ
     
 }
 MainWindow::~MainWindow()
 {
-    std::cout<<"mainwindowÎö¹¹"<<std::endl;
+    std::cout<<"mainwindowææ„"<<std::endl;
     killTimer(timerId);
     // qthread_node.quit();
     // qthread_node.wait();
@@ -226,8 +226,8 @@ MainWindow::~MainWindow()
 
 void MainWindow::closeEvent(QCloseEvent *event)
 {
-    //emit closed(); // µ±´°¿Ú¹Ø±ÕÊ±·¢³öĞÅºÅ
-    std::cout<<"mainwindow¹Ø±Õ"<<std::endl;
+    //emit closed(); // å½“çª—å£å…³é—­æ—¶å‘å‡ºä¿¡å·
+    std::cout<<"mainwindowå…³é—­"<<std::endl;
     qnode->close_flag = true;
     QMainWindow::closeEvent(event);
 }
@@ -238,11 +238,11 @@ void MainWindow::slot_action_connect_triggred()
     {
         if(first_connect)
         {
-            //ÔËĞĞgnssÇı¶¯
+            //è¿è¡Œgnssé©±åŠ¨
             runGNSSDrive();
-            //ÔËĞĞÀ×´ïÇı¶¯
+            //è¿è¡Œé›·è¾¾é©±åŠ¨
             runLidarDriver();
-            //³õÊ¼»¯ qnodeÏß³Ì
+            //åˆå§‹åŒ– qnodeçº¿ç¨‹
             emit sig_start_qnode();
             first_connect = false;
             
@@ -257,7 +257,7 @@ void MainWindow::slot_action_connect_triggred()
 
 void MainWindow::slot_connect_succeed()
 {
-    //¸³Öµ¿ØÖÆÏß³Ì¶ÔÏó
+    //èµ‹å€¼æ§åˆ¶çº¿ç¨‹å¯¹è±¡
     thread_control->mgimbal_control = qnode->gimbal_controller;
 }
 
@@ -266,13 +266,13 @@ void MainWindow::slot_action_save_triggred()
     bool flag = ui->action_save->isChecked();
     //std::cout<<"aaaaa  "<<flag<<std::endl;
     qnode->save_flag = flag;
-    //qnode->save_flag_changed = true;//³ö´íÊÇÒòÎªÃ»¼ÓËø
+    //qnode->save_flag_changed = true;//å‡ºé”™æ˜¯å› ä¸ºæ²¡åŠ é”
     
 }
 
 // void MainWindow::slot_action_open_triggred()
 // {
-//     QString filePath = QFileDialog::getOpenFileName(nullptr, "Ñ¡ÔñÎÄ¼ş", "../", "Text Files (*.txt);;All Files (*)");
+//     QString filePath = QFileDialog::getOpenFileName(nullptr, "é€‰æ‹©æ–‡ä»¶", "../", "Text Files (*.txt);;All Files (*)");
 //     if (!filePath.isEmpty()) 
 //     {
 //        // ui->lineEdit->setText(filePath);
@@ -286,12 +286,12 @@ void MainWindow::slot_action_save_triggred()
 // {
 //     if(ui->action_play->isChecked())
 //     {
-//         ui->action_play->setText("ÔİÍ£");
+//         ui->action_play->setText("æš‚åœ");
 //         ui->action_play->setIcon(QIcon(":/resources/pause.png"));
 //     }
 //     else
 //     {
-//         ui->action_play->setText("²¥·Å");
+//         ui->action_play->setText("æ’­æ”¾");
 //         ui->action_play->setIcon(QIcon(":/resources/play.png"));
 //     }
 // }
@@ -306,18 +306,18 @@ void MainWindow::slot_btn_camera_apply_clicked()
 
 
     std::stringstream ss_message;
-    ss_message << "\n"<<"µ÷Õûµõ²Õ²ÎÊıÎª: \n" << "{ Ïà»úÄ£Ê½: " << gimbal_para.camera_mode <<"; ±ä½¹±¶Êı: "<<gimbal_para.focus
-        << "; ¸©Ñö½Ç: "<<gimbal_para.pitch << "; ¹ö×ª½Ç: "<<gimbal_para.roll << "; Æ«º½½Ç: "<<gimbal_para.yaw << " }\n";
+    ss_message << "\n"<<"è°ƒæ•´åŠèˆ±å‚æ•°ä¸º: \n" << "{ ç›¸æœºæ¨¡å¼: " << gimbal_para.camera_mode <<"; å˜ç„¦å€æ•°: "<<gimbal_para.focus
+        << "; ä¿¯ä»°è§’: "<<gimbal_para.pitch << "; æ»šè½¬è§’: "<<gimbal_para.roll << "; åèˆªè§’: "<<gimbal_para.yaw << " }\n";
 
-    if(qnode->connect_gimbal)//Èç¹û´«¸ĞÆ÷³õÊ¼»¯³É¹¦
+    if(qnode->connect_gimbal)//å¦‚æœä¼ æ„Ÿå™¨åˆå§‹åŒ–æˆåŠŸ
     {
-        thread_control->control_able = false;//²»ÔÊĞí¶¨Ê±µ÷¿Ø½Ç¶È(ÒÑÆúÓÃ)
-        //ÒÑ¾­ºÍÉè±¸Á¬½Óºó ½øĞĞµõ²Õ¿ØÖÆ
+        thread_control->control_able = false;//ä¸å…è®¸å®šæ—¶è°ƒæ§è§’åº¦(å·²å¼ƒç”¨)
+        //å·²ç»å’Œè®¾å¤‡è¿æ¥å è¿›è¡ŒåŠèˆ±æ§åˆ¶
         //thread_control->mgimbal_control = qnode->gimbal_controller;
         thread_control->mparameter = gimbal_para;
-        thread_control->gps_time_str = qnode->gps_time_str;
+        thread_control->gps_time_str = qnode->latestGpsTime();
 
-        //ÉèÖÃÒÔÏÂ°´Å¥²»¿ÉÓÃ ±ÜÃâÎó²Ù×÷
+        //è®¾ç½®ä»¥ä¸‹æŒ‰é’®ä¸å¯ç”¨ é¿å…è¯¯æ“ä½œ
         ui->btn_camera_apply->setEnabled(false);
         ui->btn_downward->setEnabled(false);
         ui->btn_center->setEnabled(false);
@@ -329,28 +329,28 @@ void MainWindow::slot_btn_camera_apply_clicked()
 
     if(first_connect)
     {
-        //Éè±¸»¹Î´Á¬½Ó ½øĞĞµõ²Õ¿ØÖÆ Êµ¼ÊÊÇ¸üĞÂµõ²Õ³õÊ¼»¯²ÎÊı
+        //è®¾å¤‡è¿˜æœªè¿æ¥ è¿›è¡ŒåŠèˆ±æ§åˆ¶ å®é™…æ˜¯æ›´æ–°åŠèˆ±åˆå§‹åŒ–å‚æ•°
         qnode->yaml_config.PITCH_ANGLE = gimbal_para.pitch;
         qnode->yaml_config.YAW_ANGLE = gimbal_para.yaw;
         qnode->yaml_config.CAMERA_MODE = gimbal_para.camera_mode;
         qnode->yaml_config.FOCUS = gimbal_para.focus;
 
-        ///////////////////////////¼ÇÂ¼¿ØÖÆ×´Ì¬/////////////////////////////////
+        ///////////////////////////è®°å½•æ§åˆ¶çŠ¶æ€/////////////////////////////////
         std::ofstream output_file;
         output_file.open(thread_control->filename.str(), std::ios::app);
         if (output_file.is_open())
         {
-            output_file << "³õÊ¼Öµ: " << std::endl;
+            output_file << "åˆå§‹å€¼: " << std::endl;
             if(gimbal_para.camera_mode == 0)
             {
-                output_file << "Ä£Ê½: ¿É¼û¹â"<<std::endl;
+                output_file << "æ¨¡å¼: å¯è§å…‰"<<std::endl;
             }
             else if(gimbal_para.camera_mode == 1)
             {
-                output_file << "Ä£Ê½: ºìÍâ"<<std::endl;
+                output_file << "æ¨¡å¼: çº¢å¤–"<<std::endl;
             }
-            output_file << "¸©Ñö½Ç: "<<gimbal_para.pitch << " Æ«º½½Ç: "<<gimbal_para.yaw<<" ¹ö×ª½Ç: "<< gimbal_para.roll << std::endl;
-            output_file << "±ä½¹±¶Êı: "<<gimbal_para.focus << "x"<<std::endl;
+            output_file << "ä¿¯ä»°è§’: "<<gimbal_para.pitch << " åèˆªè§’: "<<gimbal_para.yaw<<" æ»šè½¬è§’: "<< gimbal_para.roll << std::endl;
+            output_file << "å˜ç„¦å€æ•°: "<<gimbal_para.focus << "x"<<std::endl;
             output_file << std::endl; 
         }
         output_file.close();
@@ -362,23 +362,23 @@ void MainWindow::slot_btn_camera_apply_clicked()
 
 void MainWindow::slot_spinBox_focus_valueChanged(int value)
 {
-    std::cout<<"±ä½¹±¶Êı: "<<value<<std::endl;
+    std::cout<<"å˜ç„¦å€æ•°: "<<value<<std::endl;
 }
 
 void MainWindow::slot_comboBox_camera_mode_currentIndexChanged(int value)
 {
     if(qnode->connect_gimbal)
     {
-        //Èç¹ûÏà»úµÄÄ£Ê½¸Ä±äÁË,½¹¾à¾Í²»ÊÇµ±Ç°½¹¾àÁË
-        std::cout<<"Ä£Ê½: "<<value<<std::endl;
-        int temp = ui->spinBox_focus->value();//ÉÏÒ»¸öÄ£Ê½µÄ½¹¾àÖµ
+        //å¦‚æœç›¸æœºçš„æ¨¡å¼æ”¹å˜äº†,ç„¦è·å°±ä¸æ˜¯å½“å‰ç„¦è·äº†
+        std::cout<<"æ¨¡å¼: "<<value<<std::endl;
+        int temp = ui->spinBox_focus->value();//ä¸Šä¸€ä¸ªæ¨¡å¼çš„ç„¦è·å€¼
         ui->spinBox_focus->setValue(focus);
         qnode->gimbal_controller->previous_focus = focus;
         focus = temp;
     }
 }
 
-// ÔËĞĞGNSSÇı¶¯
+// è¿è¡ŒGNSSé©±åŠ¨
 void MainWindow::runGNSSDrive()
 {
     //QString command = QString("source /home/l/GuaFei/qt_serial_ws/devel/setup.bash && roslaunch sbg_driver sbg_ellipseN2.launch; exec bash");
@@ -388,7 +388,7 @@ void MainWindow::runGNSSDrive()
     //system("gnome-terminal -- bash -c 'source /home/l/GuaFei/qt_serial_ws/devel/setup.bash && roslaunch sbg_driver sbg_ellipseN.launch; exec bash'");
 }
 
-// ÔËĞĞLidarÇı¶¯
+// è¿è¡ŒLidaré©±åŠ¨
 void MainWindow::runLidarDriver()
 {
     QString command = QString("source /home/wheeltec/1103/qt_serial_ws/devel/setup.bash && roslaunch lslidar_ls_driver lslidar_ls1550_2.launch; exec bash");
@@ -404,10 +404,10 @@ void MainWindow::slot_qnode_finished()
     if(qnode->connect_gimbal)
     {
         //thread_control->mgimbal_control = qnode->gimbal_controller;
-        emit sig_gimbol_focus_restore();//½¹¾à¹é1
+        emit sig_gimbol_focus_restore();//ç„¦è·å½’1
     }
     
-    std::cout<<"qnodeÏß³Ì½áÊøÁË"<<std::endl;
+    std::cout<<"qnodeçº¿ç¨‹ç»“æŸäº†"<<std::endl;
 }
 
 void MainWindow::slot_update_image(QImage im)
@@ -425,10 +425,10 @@ void MainWindow::slot_update_GNSS_Message(std::string message)
 void MainWindow::slot_update_GNSS_result(Gnss_result result)
 {
     std::stringstream ss_message;
-    ss_message << "µ±Ç°GPSÊ±¼ä: " << result.gps_time<<"\n"
-    << "Ä£Ê½ = " << result.mode << "\n"
-    << "x¹ö×ª = " << result.roll << "¡ã\n"  <<"y¸©Ñö = " << result.pitch << "¡ã\n" << "zº½Ïò = " << result.yaw << "¡ã\n"
-    << "Î»ÖÃ£º±±Î³ = " << result.latitude << "¡ã\n "<<"¶«¾­ = " << result.longitude << "¡ã\n"<<"º£°Î = " << result.altitude << "m\n" << "\n";
+    ss_message << "å½“å‰GPSæ—¶é—´: " << result.gps_time<<"\n"
+    << "æ¨¡å¼ = " << result.mode << "\n"
+    << "xæ»šè½¬ = " << result.roll << "Â°\n"  <<"yä¿¯ä»° = " << result.pitch << "Â°\n" << "zèˆªå‘ = " << result.yaw << "Â°\n"
+    << "ä½ç½®ï¼šåŒ—çº¬ = " << result.latitude << "Â°\n "<<"ä¸œç» = " << result.longitude << "Â°\n"<<"æµ·æ‹” = " << result.altitude << "m\n" << "\n";
     ui->plainTextEdit_GNSS->appendPlainText(QString::fromStdString(ss_message.str()));
    
     ui->graphicsEADI->setRoll(result.roll);
@@ -457,15 +457,15 @@ void MainWindow::slot_update_airPressure_result(AirPressure_result result)
 {
     //std::cout<<"ggggg"<<std::endl;
     std::string message;
-    message = "´óÆø¾²Ñ¹: " + std::to_string(result.pressure_a) + " hPa  "
-                //+ "±ê×¼ÆøÑ¹¸ß¶È: " + std::to_string(result.altitude_a) + " m  "
-                //+ "ÅÀÉıÂÊ: " + std::to_string(result.rate) + " m/s  "
-                + "ÆøÑ¹Ğ£ÕıÏà¶Ô¸ß¶È: " + std::to_string(result.altitude_b) + " m\n";
+    message = "å¤§æ°”é™å‹: " + std::to_string(result.pressure_a) + " hPa  "
+                //+ "æ ‡å‡†æ°”å‹é«˜åº¦: " + std::to_string(result.altitude_a) + " m  "
+                //+ "çˆ¬å‡ç‡: " + std::to_string(result.rate) + " m/s  "
+                + "æ°”å‹æ ¡æ­£ç›¸å¯¹é«˜åº¦: " + std::to_string(result.altitude_b) + " m\n";
     //std::cout<<message<<std::endl;
     ui->plainTextEdit_barometric_altimeter->appendPlainText(QString::fromStdString(message));
 
-    ui->graphicsALT->setAltitude(result.altitude_b/ 0.3048);//Ó¢³ß£¨ft£©ºÍÃ×£¨m£©Ö®¼äµÄ»»Ëã
-    ui->graphicsALT->setPressure(result.pressure_a/33.8639);//hPa£¨°ÙÅÁ£©ºÍinHg£¨Ó¢´ç¹¯Öù£©»»Ëã
+    ui->graphicsALT->setAltitude(result.altitude_b/ 0.3048);//è‹±å°ºï¼ˆftï¼‰å’Œç±³ï¼ˆmï¼‰ä¹‹é—´çš„æ¢ç®—
+    ui->graphicsALT->setPressure(result.pressure_a/33.8639);//hPaï¼ˆç™¾å¸•ï¼‰å’ŒinHgï¼ˆè‹±å¯¸æ±æŸ±ï¼‰æ¢ç®—
     
     update();
 
@@ -498,7 +498,7 @@ void MainWindow::slot_update_radio_altitude_result(Radio_result result)
 
 void MainWindow::slot_update_status_bar(QString message)
 {
-    ui->statusbar->clearMessage(); // Çå³ıµ±Ç°ÏÔÊ¾µÄÏûÏ¢
+    ui->statusbar->clearMessage(); // æ¸…é™¤å½“å‰æ˜¾ç¤ºçš„æ¶ˆæ¯
     ui->statusbar->showMessage(message, 10000); 
 }
 
@@ -524,18 +524,18 @@ void MainWindow::slot_action_GNSS_reload_triggred()
 
 void MainWindow::slot_tBn_zoom_up_clicked()
 {
-    if(qnode->connect_gimbal)//Ö»ÔÚ¹âµç³õÊ¼»¯³É¹¦ºóÓĞĞ§
+    if(qnode->connect_gimbal)//åªåœ¨å…‰ç”µåˆå§‹åŒ–æˆåŠŸåæœ‰æ•ˆ
     {
-        thread_control->control_able = false;//²»ÔÊĞí¶¨Ê±µ÷¿Ø½Ç¶È
+        thread_control->control_able = false;//ä¸å…è®¸å®šæ—¶è°ƒæ§è§’åº¦
         int focus =  ui->spinBox_focus->value();
         if(focus < 8)
         {
-            ui->spinBox_focus->setValue(focus + 1);//¸üĞÂ½çÃæÉÏµÄ½¹¾àÏÔÊ¾
+            ui->spinBox_focus->setValue(focus + 1);//æ›´æ–°ç•Œé¢ä¸Šçš„ç„¦è·æ˜¾ç¤º
         }
         //thread_control->mgimbal_control = qnode->gimbal_controller;
-        thread_control->gps_time_str = qnode->gps_time_str;//´«µİÊ±¼ä
+        thread_control->gps_time_str = qnode->latestGpsTime();//ä¼ é€’æ—¶é—´
 
-        //ÉèÖÃÒÔÏÂ°´Å¥²»¿ÉÓÃ ±ÜÃâÎó²Ù×÷
+        //è®¾ç½®ä»¥ä¸‹æŒ‰é’®ä¸å¯ç”¨ é¿å…è¯¯æ“ä½œ
         ui->btn_camera_apply->setEnabled(false);
         ui->btn_downward->setEnabled(false);
         ui->btn_center->setEnabled(false);
@@ -549,18 +549,18 @@ void MainWindow::slot_tBn_zoom_up_clicked()
 
 void MainWindow::slot_tBn_zoom_down_clicked()
 {
-    if(qnode->connect_gimbal)//Ö»ÔÚ¹âµç³õÊ¼»¯³É¹¦ºóÓĞĞ§
+    if(qnode->connect_gimbal)//åªåœ¨å…‰ç”µåˆå§‹åŒ–æˆåŠŸåæœ‰æ•ˆ
     {
-        thread_control->control_able = false;//²»ÔÊĞí¶¨Ê±µ÷¿Ø½Ç¶È
+        thread_control->control_able = false;//ä¸å…è®¸å®šæ—¶è°ƒæ§è§’åº¦
         int focus =  ui->spinBox_focus->value();
         if(focus > 1)
         {
             ui->spinBox_focus->setValue(focus - 1);
         }
         //thread_control->mgimbal_control = qnode->gimbal_controller;
-        thread_control->gps_time_str = qnode->gps_time_str;//´«µİÊ±¼ä
+        thread_control->gps_time_str = qnode->latestGpsTime();//ä¼ é€’æ—¶é—´
 
-        //ÉèÖÃÒÔÏÂ°´Å¥²»¿ÉÓÃ ±ÜÃâÎó²Ù×÷
+        //è®¾ç½®ä»¥ä¸‹æŒ‰é’®ä¸å¯ç”¨ é¿å…è¯¯æ“ä½œ
         ui->btn_camera_apply->setEnabled(false);
         ui->btn_downward->setEnabled(false);
         ui->btn_center->setEnabled(false);
@@ -571,36 +571,36 @@ void MainWindow::slot_tBn_zoom_down_clicked()
     }
 }
 
-//Ò»¼üÏòÏÂ°´Å¥¶ÔÓ¦µÄ²Ûº¯Êı
+//ä¸€é”®å‘ä¸‹æŒ‰é’®å¯¹åº”çš„æ§½å‡½æ•°
 void MainWindow::slot_btn_downward_clicked()
 {
-    if(qnode->connect_gimbal)//Ö»ÔÚ¹âµç³õÊ¼»¯³É¹¦ºóÓĞĞ§
+    if(qnode->connect_gimbal)//åªåœ¨å…‰ç”µåˆå§‹åŒ–æˆåŠŸåæœ‰æ•ˆ
     {
-        //ÉèÖÃÒÔÏÂ°´Å¥²»¿ÉÓÃ ±ÜÃâÎó²Ù×÷
+        //è®¾ç½®ä»¥ä¸‹æŒ‰é’®ä¸å¯ç”¨ é¿å…è¯¯æ“ä½œ
         ui->btn_camera_apply->setEnabled(false);
         ui->btn_downward->setEnabled(false);
         ui->btn_center->setEnabled(false);
         ui->tBn_zoom_up->setEnabled(false);
         ui->tBn_zoom_down->setEnabled(false);
-        thread_control->gps_time_str = qnode->gps_time_str;//´«µİÊ±¼ä
+        thread_control->gps_time_str = qnode->latestGpsTime();//ä¼ é€’æ—¶é—´
 
-        emit sig_set_downward();//·¢³öÒ»¼üÏòÏÂĞÅºÅ
+        emit sig_set_downward();//å‘å‡ºä¸€é”®å‘ä¸‹ä¿¡å·
     }
 }
 
 void MainWindow::slot_btn_center_clicked()
 {
-    if(qnode->connect_gimbal)//Ö»ÔÚ¹âµç³õÊ¼»¯³É¹¦ºóÓĞĞ§
+    if(qnode->connect_gimbal)//åªåœ¨å…‰ç”µåˆå§‹åŒ–æˆåŠŸåæœ‰æ•ˆ
     {
-        //ÉèÖÃÒÔÏÂ°´Å¥²»¿ÉÓÃ ±ÜÃâÎó²Ù×÷
+        //è®¾ç½®ä»¥ä¸‹æŒ‰é’®ä¸å¯ç”¨ é¿å…è¯¯æ“ä½œ
         ui->btn_camera_apply->setEnabled(false);
         ui->btn_downward->setEnabled(false);
         ui->btn_center->setEnabled(false);
         ui->tBn_zoom_up->setEnabled(false);
         ui->tBn_zoom_down->setEnabled(false);
-        thread_control->gps_time_str = qnode->gps_time_str;//´«µİÊ±¼ä
+        thread_control->gps_time_str = qnode->latestGpsTime();//ä¼ é€’æ—¶é—´
 
-        emit sig_set_center();//·¢³öÒ»¼ü»ØÖĞĞÅºÅ
+        emit sig_set_center();//å‘å‡ºä¸€é”®å›ä¸­ä¿¡å·
     }
 }
 
@@ -611,7 +611,7 @@ void MainWindow::slot_gimbal_config_finished()
     ui->btn_center->setEnabled(true);
     ui->tBn_zoom_up->setEnabled(true);
     ui->tBn_zoom_down->setEnabled(true);
-    //ÉèÖÃÍê³Éºó ĞèÒªÖØĞÂ½¨Á¢ÎÄ¼ş¼Ğ £¨ÒÑÈ¡Ïû£©
+    //è®¾ç½®å®Œæˆå éœ€è¦é‡æ–°å»ºç«‹æ–‡ä»¶å¤¹ ï¼ˆå·²å–æ¶ˆï¼‰
     //create_folder();
 }
 
@@ -622,22 +622,22 @@ void MainWindow::slot_clear_message()
     ui->plainTextEdit_radio_altimeter->clear();
 }
 
-//ÒÑÆúÓÃ
+//å·²å¼ƒç”¨
 void MainWindow::slot_control_angle()
 {
     if(qnode->connect_gimbal)
     {
-        emit sig_angle_control(gimbal_para.pitch, gimbal_para.yaw);//ºóĞøÓÅ»¯ ²»ĞèÒªÒ»Ö±¼ÆËã
+        emit sig_angle_control(gimbal_para.pitch, gimbal_para.yaw);//åç»­ä¼˜åŒ– ä¸éœ€è¦ä¸€ç›´è®¡ç®—
     }
 }
 
 void MainWindow::updateTime()
 {
-    // »ñÈ¡µ±Ç°Ê±¼ä
+    // è·å–å½“å‰æ—¶é—´
     QDateTime current = QDateTime::currentDateTime();
-    // ½«Ê±¼ä¸ñÊ½»¯Îª×Ö·û´®
+    // å°†æ—¶é—´æ ¼å¼åŒ–ä¸ºå­—ç¬¦ä¸²
     QString timeString = current.toString("yyyy-MM-dd HH:mm:ss");
-    // ¸üĞÂQLabelÏÔÊ¾µÄÊ±¼ä
+    // æ›´æ–°QLabelæ˜¾ç¤ºçš„æ—¶é—´
     ui->label_time->setText(timeString);
 
     // if(qnode->connect_succeed)
@@ -645,14 +645,14 @@ void MainWindow::updateTime()
     //     std::cout<<qnode->rtsp_capture->capture_num<<std::endl;
     // }
 
-    // // ´´½¨Ëæ»úÊıÉú³ÉÆ÷
-    // std::random_device rd;  // ÓÃÓÚ»ñÈ¡Ëæ»úÊıÖÖ×Ó
-    // std::mt19937 gen(rd()); // ¸ù¾İÖÖ×Ó³õÊ¼»¯Mersenne TwisterÉú³ÉÆ÷
+    // // åˆ›å»ºéšæœºæ•°ç”Ÿæˆå™¨
+    // std::random_device rd;  // ç”¨äºè·å–éšæœºæ•°ç§å­
+    // std::mt19937 gen(rd()); // æ ¹æ®ç§å­åˆå§‹åŒ–Mersenne Twisterç”Ÿæˆå™¨
 
-    // // ¶¨Òå¸¡µãÊı·¶Î§
+    // // å®šä¹‰æµ®ç‚¹æ•°èŒƒå›´
     // std::uniform_real_distribution<> dis(-90.0, 90.0);
 
-    // // Éú³ÉËæ»ú¸¡µãÊı
+    // // ç”Ÿæˆéšæœºæµ®ç‚¹æ•°
     // double randomFloat = dis(gen);
 
     // ui->graphicsEADI->setRoll(randomFloat);
@@ -669,19 +669,19 @@ void MainWindow::updateTime()
 
 }
 
-//GNSS°´Å¥²Ûº¯Êı
+//GNSSæŒ‰é’®æ§½å‡½æ•°
 void MainWindow::slot_rBtn_GNSS_clicked(bool checked)
 {
     qnode->send_GNSS = checked;
 }
 
-//ÆøÑ¹¸ß¶È¼Æ²Ûº¯Êı
+//æ°”å‹é«˜åº¦è®¡æ§½å‡½æ•°
 void MainWindow::slot_rBtn_barometric_altimeter_clicked(bool checked)
 {
     qnode->send_barometric_altimeter = checked;
 }
 
-//ÎŞÏßµç¸ß¶È¼Æ²Ûº¯Êı
+//æ— çº¿ç”µé«˜åº¦è®¡æ§½å‡½æ•°
 void MainWindow::slot_rBtn_radio_altimeter_clicked(bool checked)
 {
     qnode->send_radio_altimeter = checked;
@@ -690,7 +690,7 @@ void MainWindow::slot_rBtn_radio_altimeter_clicked(bool checked)
 void MainWindow::timerEvent(QTimerEvent *event)
 {
     QMainWindow::timerEvent(event);
-    //Ë¢ĞÂÒÇ±í
+    //åˆ·æ–°ä»ªè¡¨
     ui->graphicsEADI->redraw();
     ui->graphicsHI->redraw();
     ui->graphicsAI->redraw();
@@ -708,7 +708,7 @@ void MainWindow::slot_btn_scene_matching_clicked()
 {
     //ui->edit_longitude_scene->setText("118.767");
     //ui->edit_latitude_scene->setText("32.0500");
-    //ui->edit_image_match->setText("ÕıÔÚ½øĞĞ¾°ÏñÆ¥Åä...");
+    //ui->edit_image_match->setText("æ­£åœ¨è¿›è¡Œæ™¯åƒåŒ¹é…...");
     emit sig_start_image_match();
 }
 
@@ -765,7 +765,7 @@ void MainWindow::slot_action_serial_setting_triggred()
 {
     if (!dlg_serial_setting->isVisible()) 
     {
-        dlg_serial_setting->show(); // Èç¹û¶Ô»°¿ò²»¿É¼û£¬ÔòÏÔÊ¾Ëü
+        dlg_serial_setting->show(); // å¦‚æœå¯¹è¯æ¡†ä¸å¯è§ï¼Œåˆ™æ˜¾ç¤ºå®ƒ
     }
 }
 
@@ -774,7 +774,7 @@ void MainWindow::slot_setserial_finished()
     this->close();
 }
 
-//¾°ÏóÆ¥ÅäÍê±Ï
+//æ™¯è±¡åŒ¹é…å®Œæ¯•
 void MainWindow::slot_single_image_match_finished(QImage img, float lon, float lat)
 {
 
@@ -792,31 +792,31 @@ void MainWindow::slot_single_image_match_finished(QImage img, float lon, float l
 
 void MainWindow::slot_image_match_finished()
 {
-    //ui->edit_image_match->setText("¾°ÏñÆ¥ÅäÍê³É£¡");
+    //ui->edit_image_match->setText("æ™¯åƒåŒ¹é…å®Œæˆï¼");
 }
 
-//µØĞÎÆ¥ÅäÍê±Ï
+//åœ°å½¢åŒ¹é…å®Œæ¯•
 void MainWindow::slot_terrain_match_finished()
 {
-    std::cout << "µØĞÎÆ¥ÅäÍê±Ï" << std::endl;
+    std::cout << "åœ°å½¢åŒ¹é…å®Œæ¯•" << std::endl;
 }
 
-//´´½¨ÎÄ¼ş¼Ğ
+//åˆ›å»ºæ–‡ä»¶å¤¹
 void MainWindow::create_folder()
 {
     std::vector<std::string> photo_serial_path(3);
 
-    /*Ò»Õâ¸öµØ·½ÊÇÎªÁËµõ²Õ×´Ì¬¸ü¸ÄÊ±¾ÍĞÂ½¨ÎÄ¼ş¼Ğ£¬µ«¿¼ÂÇµ½µõ²Õ·¢ËÍÖ¸ÁîÑÓ³ÙĞÔ£¬
-    ËùÒÔ²»¿¼ÂÇÕâ¸ö·½·¨ÁË£¬»¹ÊÇ±£³ÖÔ­À´µÄ£º´ò¿ªÈí¼ş£¬½¨Á¢Ò»¸öÎÄ¼ş¼Ğ*/
-    // »ñÈ¡µ±Ç°Ê±¼ä
+    /*ä¸€è¿™ä¸ªåœ°æ–¹æ˜¯ä¸ºäº†åŠèˆ±çŠ¶æ€æ›´æ”¹æ—¶å°±æ–°å»ºæ–‡ä»¶å¤¹ï¼Œä½†è€ƒè™‘åˆ°åŠèˆ±å‘é€æŒ‡ä»¤å»¶è¿Ÿæ€§ï¼Œ
+    æ‰€ä»¥ä¸è€ƒè™‘è¿™ä¸ªæ–¹æ³•äº†ï¼Œè¿˜æ˜¯ä¿æŒåŸæ¥çš„ï¼šæ‰“å¼€è½¯ä»¶ï¼Œå»ºç«‹ä¸€ä¸ªæ–‡ä»¶å¤¹*/
+    // è·å–å½“å‰æ—¶é—´
     // QDateTime current_time = QDateTime::currentDateTime();
-    // // ½«Ê±¼ä¸ñÊ½»¯Îª×Ö·û´®
+    // // å°†æ—¶é—´æ ¼å¼åŒ–ä¸ºå­—ç¬¦ä¸²
     // std::string time_string = current_time.toString("M-d-H-m-s").toStdString();
     //std::string folder_path = qnode->top_folder_path + "/" + time_string;
     // photo_serial_path[0] = folder_path + "/Photos";
     // photo_serial_path[1] = folder_path + "/SerialData";
     
-    // //´´½¨outputÎÄ¼ş¼Ğ ÒÔ"output+Ê±¼ä"ÃüÃû
+    // //åˆ›å»ºoutputæ–‡ä»¶å¤¹ ä»¥"output+æ—¶é—´"å‘½å
     // try {
     //     if (std::filesystem::create_directory(folder_path)) {
     //         //std::cout << "Folder created: " << folder_path << std::endl;
@@ -832,7 +832,7 @@ void MainWindow::create_folder()
     photo_serial_path[1] = folder_path + "/SerialData";
     photo_serial_path[2] = folder_path + "/Points";
 
-    //´´½¨Í¼Æ¬ÎÄ¼ş¼Ğ ÒÔ"Photos"ÃüÃû
+    //åˆ›å»ºå›¾ç‰‡æ–‡ä»¶å¤¹ ä»¥"Photos"å‘½å
     try 
     {
         if (std::filesystem::create_directory(photo_serial_path[0])) 
@@ -847,7 +847,7 @@ void MainWindow::create_folder()
     {
         std::cerr << "Error: " << e.what() << std::endl;
     }
-    //´´½¨´®¿ÚĞÅÏ¢ÎÄ¼ş¼Ğ ÒÔ"SerialData"ÃüÃû
+    //åˆ›å»ºä¸²å£ä¿¡æ¯æ–‡ä»¶å¤¹ ä»¥"SerialData"å‘½å
     try 
     {
         if (std::filesystem::create_directory(photo_serial_path[1])) 
@@ -862,7 +862,7 @@ void MainWindow::create_folder()
     {
         std::cerr << "Error: " << e.what() << std::endl;
     }
-    //´´½¨µãÔÆÎÄ¼ş¼Ğ ÒÔ"Points"ÃüÃû
+    //åˆ›å»ºç‚¹äº‘æ–‡ä»¶å¤¹ ä»¥"Points"å‘½å
     try 
     {
         if (std::filesystem::create_directory(photo_serial_path[2])) 
@@ -880,18 +880,18 @@ void MainWindow::create_folder()
     qnode->photo_serial_path = photo_serial_path;
 }
 
-//´´½¨¶¥²ãÎÄ¼ş¼Ğ
+//åˆ›å»ºé¡¶å±‚æ–‡ä»¶å¤¹
 void MainWindow::create_top_folder()
 {
-    // »ñÈ¡µ±Ç°Ê±¼ä
+    // è·å–å½“å‰æ—¶é—´
     QDateTime current_time = QDateTime::currentDateTime();
-    // ½«Ê±¼ä¸ñÊ½»¯Îª×Ö·û´®
+    // å°†æ—¶é—´æ ¼å¼åŒ–ä¸ºå­—ç¬¦ä¸²
     std::string time_string = current_time.toString("M-d-H-m-s").toStdString();
 
     std::string cutrrent_path = QDir::currentPath().toStdString();
     qnode->top_folder_path = cutrrent_path + "/output_" + time_string;
 
-    //´´½¨outputÎÄ¼ş¼Ğ ÒÔ"output+Ê±¼ä"ÃüÃû
+    //åˆ›å»ºoutputæ–‡ä»¶å¤¹ ä»¥"output+æ—¶é—´"å‘½å
     try {
         if (std::filesystem::create_directory(qnode->top_folder_path)) {
             //std::cout << "Folder created: " << folder_path << std::endl;

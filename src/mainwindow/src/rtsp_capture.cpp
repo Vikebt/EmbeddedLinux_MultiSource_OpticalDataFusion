@@ -1,5 +1,6 @@
 #include "../include/rtsp_capture.h"
 #include "rtsp_capture.h"
+#include "reconnect_backoff.h"
 
 
 
@@ -8,12 +9,10 @@ RTSPCapture::RTSPCapture():
     rtsp_url_(DEFAULT_RTSP_URL), 
     width_new_(DEFAULT_WIDTH), 
     height_new_(DEFAULT_HEIGHT),
-    capture_thread_flag(true),
-    capture_num(0),
-    camera_mode(0)
-    {
-
-    }
+    capture_thread_flag(false),
+    capture_num(0)
+{
+}
 
 RTSPCapture::~RTSPCapture()
 {
@@ -60,22 +59,31 @@ void RTSPCapture::imgResize(cv::Mat& image) {
 
 void RTSPCapture::capture_frames_thread()
 {
+    ReconnectBackoff backoff(std::chrono::milliseconds(250),
+                             std::chrono::milliseconds(5000));
     while (capture_thread_flag) 
     { 
         //抓取图片 
         cv::Mat frame;
         cap_ >> frame;
         if (frame.empty()) {
-            ROS_ERROR("无法读取帧，结束");
-            //break;
+            ROS_WARN("无法读取 RTSP 帧，准备退避重连");
             cap_.release();
-            // 重新定义 VideoCapture 对象并尝试打开视频流
+            const auto delay = backoff.nextDelay();
+            for (std::chrono::milliseconds waited(0);
+                 capture_thread_flag && waited < delay;
+                 waited += std::chrono::milliseconds(50)) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(50));
+            }
+            if (!capture_thread_flag) break;
             cap_.open(rtsp_url_);
             if (!cap_.isOpened()) {
-                std::cerr << "重新打开视频流失败" << std::endl;
+                ROS_WARN("RTSP 重连失败，下一次延迟 %lld ms",
+                         static_cast<long long>(delay.count()));
             }
             continue;
         }
+        backoff.reset();
         // if(frame.type() == CV_8UC3) {
         //     // frame 是三通道的彩色图像，通常是BGR格式
         //     std::cout<<"BGR"<<std::endl;
@@ -92,7 +100,7 @@ void RTSPCapture::capture_frames_thread()
         // {
         //     infraredProcesse(frame);
         // }
-        if(*share_cameramode == 1)
+        if((share_cameramode != nullptr) && (share_cameramode->load() == 1))
         {
             infraredProcesse(frame);
         }
@@ -116,15 +124,19 @@ void RTSPCapture::capture_frames_thread()
 void RTSPCapture::start_thread()
 {
     if (!capture_thread) {
+        capture_thread_flag = true;
         capture_thread = std::make_unique<std::thread>(&RTSPCapture::capture_frames_thread, this);
     }
 }
 
 void RTSPCapture::stop_thread()
 {
+    capture_thread_flag = false;
+    cap_.release();
     if (capture_thread && capture_thread->joinable()) {
         capture_thread->join();
     }
+    capture_thread.reset();
 }
 
 bool RTSPCapture::latestFrame(cv::Mat* frame) const

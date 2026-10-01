@@ -6,6 +6,7 @@
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/point_types.h>
 #include <pcl/point_cloud.h>
+#include <mutex>
 
 class PointCapture
 {
@@ -18,9 +19,13 @@ private:
     void pointcloud_callback(const sensor_msgs::PointCloud2::ConstPtr& msg);//lslidar_point_cloud_sub话题的回调函数
 
 public:
-    pcl::PointCloud<pcl::PointXYZ> now_cloud;
+    bool latest(pcl::PointCloud<pcl::PointXYZ>* output, int* sequence = nullptr) const;
     std::string gps_time_str;  // 用于保存GPS时间
-    int capture_num;
+
+private:
+    mutable std::mutex cloud_mutex_;
+    pcl::PointCloud<pcl::PointXYZ> now_cloud_;
+    int capture_num_{0};
 };
 
-#endif 
+#endif

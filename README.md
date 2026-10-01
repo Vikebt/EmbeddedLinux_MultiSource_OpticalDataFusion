@@ -1,11 +1,11 @@
 # 机载多源光电数据融合导航系统 · NVIDIA Jetson Orin NX
 
-一套部署于 NVIDIA Jetson Orin NX 的机载多源数据采集、融合验证和 Qt 平台管理系统。工程同时接入光电吊舱、RTSP 视频、SBG 组合惯导/GNSS、气压高度计、无线电高度计和点云数据，完成实时展示、记录、ROS 状态发布及景象/地形匹配导航验证。
+一套面向 NVIDIA Jetson Orin NX 的机载多源数据采集、融合验证和 Qt 平台管理系统。工程接入光电吊舱、RTSP 视频、SBG 组合惯导/GNSS、气压高度计、无线电高度计和点云数据，完成实时展示、记录及景象/地形匹配导航验证。
 
 > **平台**：NVIDIA Jetson Orin NX（ARM64 / Embedded Linux）
 > **技术栈**：C++17、ROS/catkin、Qt5、OpenCV、PCL、yaml-cpp、RTSP、串口、SBG INS/GNSS
-> **本人职责**：负责嵌入式 Linux 数据处理、传感器接入与记录、Qt 地面站、吊舱/视频集成、融合验证及机载部署。
-> **项目资料**：[STAR 完整梳理](项目二_多源光电数据融合导航系统_STAR完整梳理.md)
+> **仓库实现范围**：嵌入式 Linux 数据处理、传感器接入与记录、Qt 界面、吊舱/视频集成和融合验证代码。具体硬件部署结果以现场验证记录为准。
+> **项目资料**：[验证边界与面试证据](src/mainwindow/INTERVIEW_EVIDENCE.md)
 
 ## 项目背景
 
@@ -15,7 +15,7 @@
 
 ```text
 光电吊舱 ──── 串口控制 ─┐
-RTSP 视频 ─── OpenCV ───┼─> QNode 生命周期与 ROS 发布 ─> Qt 地面站 / 数据记录
+RTSP 视频 ─── OpenCV ───┼─> QNode 生命周期与一致性快照 ─> Qt 地面站 / 数据记录
 SBG GNSS/INS ───────────┤              │
 气压/无线电高度计 ──────┤              └─> 高度融合 / INS / Kalman / TERCOM / SITAN
 点云数据 ───────────────┘
@@ -25,15 +25,16 @@ SBG GNSS/INS ───────────┤              │
 | --- | --- | --- |
 | 设备接入层 | `gimbal_control`、`rtsp_capture`、`gnss_output`、高度计、点云采集 | 串口协议、RTSP 取帧、传感器读取 |
 | 数据处理层 | `Integrated_Navigation_sys`、`location` | 高度融合、INS 更新、Kalman、TERCOM/SITAN、景象匹配 |
-| 集成层 | `QNode` | 设备生命周期、线程协调、ROS 发布、采集会话 |
+| 集成层 | `QNode` | 设备生命周期、ROS 回调、线程协调、采集会话 |
 | 应用层 | `mainwindow`、`qfi`、对话框 | Qt 状态显示、控制与验证交互 |
 
 ## 技术要点
 
 - RTSP 视频在独立线程采集，以互斥锁保护帧快照；Qt 显示和记录流程不直接共享采集线程的 `cv::Mat`。
-- RTSP 对象析构时先停止并回收工作线程，防止设备资源释放后后台线程继续访问。
+- RTSP 对象析构时先停止并回收工作线程；断流采用 250 ms 到 5 s 的指数退避，避免网络故障时忙循环。
 - 点云落盘采用独立工作线程和最多 3 帧的有界队列；慢速磁盘场景丢弃最旧数据，保持实时链路与内存上界。
-- 通过 ROS 发布 GNSS、高度计、图像和吊舱状态，便于外部验证工具订阅或 rosbag 回放。
+- ROS 回调只有 QNode 的 `spinOnce()` 一个调度所有者；各传感器通过加锁快照向 Qt 工作线程交付一致数据。
+- 当前 QNode 通过 Qt signal 更新界面，并由 ROS subscriber 接收 GNSS/点云；代码虽保留若干 publisher 句柄，但主循环尚未调用 `publish()`，因此不把对外发布写成已完成功能。
 - `config/device_profile.yaml` 集中管理设备配置，兼容旧配置；支持 `WINDOW_CONTROL_CONFIG` 注入现场参数并校验串口路径/波特率。
 - CMake 使用 C++17、Release 默认、包内相对路径和 Jetson Orin NX ARMv8.2-A/Cortex-A78 工具链。
 

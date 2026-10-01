@@ -13,4 +13,5 @@
 
 # Runtime capture output
 /data/
+src/mainwindow/tests/host/*.exe
 /src/out/
