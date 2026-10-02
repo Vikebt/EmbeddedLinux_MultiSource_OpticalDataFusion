@@ -6,6 +6,7 @@
 > **技术栈**：C++17、ROS/catkin、Qt5、OpenCV、PCL、yaml-cpp、RTSP、串口、SBG INS/GNSS
 > **仓库实现范围**：嵌入式 Linux 数据处理、传感器接入与记录、Qt 界面、吊舱/视频集成和融合验证代码。具体硬件部署结果以现场验证记录为准。
 > **项目资料**：[验证边界与面试证据](src/mainwindow/INTERVIEW_EVIDENCE.md)
+> **面试学习入口**：[五项目讲义（main）](https://github.com/Vikebt/EmbeddedLinux_IMX6ULL_ConditionMonitor/tree/main/docs/interview-handbook) · [固定版本](https://github.com/Vikebt/EmbeddedLinux_IMX6ULL_ConditionMonitor/tree/study-step-7-detailed-handbook/docs/interview-handbook) · [进程线程章节](https://github.com/Vikebt/EmbeddedLinux_IMX6ULL_ConditionMonitor/blob/main/docs/interview-handbook/03-linux-process-thread.md) · [P4 项目故事](https://github.com/Vikebt/EmbeddedLinux_IMX6ULL_ConditionMonitor/blob/main/docs/interview-handbook/06-project-stories.md#p4多源光电数据融合)
 
 ## 项目背景
 

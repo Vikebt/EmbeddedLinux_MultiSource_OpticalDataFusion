@@ -1,5 +1,7 @@
 # 面试证据索引：多源光电数据融合
 
+总讲义见 [模块化五项目面试讲义](https://github.com/Vikebt/EmbeddedLinux_IMX6ULL_ConditionMonitor/tree/main/docs/interview-handbook)，本项目重点对应 [C++ 与资源所有权](https://github.com/Vikebt/EmbeddedLinux_IMX6ULL_ConditionMonitor/blob/main/docs/interview-handbook/01-c-cpp-memory.md)、[进程线程](https://github.com/Vikebt/EmbeddedLinux_IMX6ULL_ConditionMonitor/blob/main/docs/interview-handbook/03-linux-process-thread.md)、[P4 项目故事](https://github.com/Vikebt/EmbeddedLinux_IMX6ULL_ConditionMonitor/blob/main/docs/interview-handbook/06-project-stories.md#p4多源光电数据融合) 与实验手册。固定证据标签为本仓库 `study-step-2-consistent-snapshots`；总讲义固定标签为 `study-step-7-detailed-handbook`。
+
 | 常见问题 | 代码证据 | 工程回答 |
 |---|---|---|
 | `detach` 有什么风险？ | `QNode::init` 与 `GnssOutput` | 原 detached spinner 可能在对象析构后继续访问；现在 ROS 回调由 QNode 单一调度，生命周期跟随 QNode |
