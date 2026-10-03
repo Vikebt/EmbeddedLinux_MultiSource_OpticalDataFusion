@@ -20,6 +20,9 @@ jobs:
             ros-noetic-serial \
             ros-noetic-cv-bridge \
             ros-noetic-image-transport \
+            ros-noetic-tf2-geometry-msgs \
+            ros-noetic-tf2-ros \
+            ros-noetic-tf2-msgs \
             ros-noetic-pcl-ros \
             ros-noetic-pcl-conversions \
             ros-noetic-nodelet \
