@@ -7,6 +7,13 @@ enable_testing()
 add_test(NAME reconnect_backoff COMMAND test_reconnect_backoff)
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    add_executable(test_navigation_datagram test_navigation_datagram.cpp)
+    target_include_directories(test_navigation_datagram PRIVATE
+        ../../src/Integrated_Navigation_sys/include)
+    add_test(NAME navigation_datagram COMMAND test_navigation_datagram)
+endif()
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     # WSL may inherit Windows/Conda CMake package paths containing .lib files.
     find_package(yaml-cpp QUIET CONFIG PATHS /usr /usr/local NO_DEFAULT_PATH)
 else()

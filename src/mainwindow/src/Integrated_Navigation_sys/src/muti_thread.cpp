@@ -1,4 +1,5 @@
 #include <muti_thread.h>
+#include <navigation_datagram.h>
 #include <thread>      
 #include <chrono> 
 #include <cerrno>
@@ -79,104 +80,19 @@ void recv_thread()
         cout << "recv_thread timeout setup error!" << endl;
         return;
     }
-    int recvnum = 0;
-    // char recvbuf[1024] = "";
-    double recvbuf[28]; ///
+    ssize_t recvnum = 0;
+    double recvbuf[navigation_wire::kSampleCount];
     data_recv recv;
     int stack_size = 1;
     while (!stop_thread)
     {
         Client_addr_size = sizeof(Client_addr);
-        //
-        recvnum = recvfrom(socketfd, recvbuf, sizeof(recvbuf), 0, (struct sockaddr *)&Client_addr, &Client_addr_size);
-        // recvnum = recvfrom(socketfd, recvbuf, sizeof(recvbuf), 0, nullptr, nullptr);
-        if (recvnum == static_cast<int>(sizeof(recvbuf)))
+        // MSG_TRUNC returns the original UDP length even when the buffer is too small.
+        recvnum = recvfrom(socketfd, recvbuf, sizeof(recvbuf), MSG_TRUNC,
+                           (struct sockaddr *)&Client_addr, &Client_addr_size);
+        if (recvnum >= 0 && navigation_wire::decode(
+                recvbuf, static_cast<std::size_t>(recvnum), recv))
         {
-            recv.time_sec = static_cast<float>(recvbuf[0]);
-            recv.INS_lon = recvbuf[1];
-            recv.INS_lat = recvbuf[2];
-            recv.INS_heig = recvbuf[3];
-            recv.INS_head = recvbuf[4];
-            recv.INS_pitch = recvbuf[5];
-            recv.INS_roll = recvbuf[6];
-            recv.INS_Fb_x = recvbuf[7];
-            recv.INS_Fb_y = recvbuf[8];
-            recv.INS_Fb_z = recvbuf[9];
-            recv.INS_Wibb_x = recvbuf[10];
-            recv.INS_Wibb_y = recvbuf[11];
-            recv.INS_WIbb_z = recvbuf[12];
-            recv.INS_ve = recvbuf[13];
-            recv.INS_vn = recvbuf[14];
-            recv.INS_vu = recvbuf[15];
-            recv.BA = static_cast<float>(recvbuf[16]);
-            recv.real_time_temp = static_cast<float>(recvbuf[17]);
-            recv.real_time_press = static_cast<float>(recvbuf[18]);
-            recv.Is_GPS_valid = static_cast<int>(recvbuf[19]);
-            recv.GPS_lon = static_cast<float>(recvbuf[20]);
-            recv.GPS_lat = static_cast<float>(recvbuf[21]);
-            recv.GPS_heig = static_cast<float>(recvbuf[22]);
-            recv.GPS_ve = static_cast<float>(recvbuf[23]);
-            recv.GPS_vn = static_cast<float>(recvbuf[24]);
-            recv.GPS_vu = static_cast<float>(recvbuf[25]);
-            recv.RA = static_cast<float>(recvbuf[26]);
-            recv.real_time = static_cast<int64_t>(recvbuf[27]);
-            // recv.real_lon = recvbuf[28];
-            // recv.real_lat = recvbuf[29];
-            // recv.real_heig = recvbuf[30];
-            // cout<<recv.RA<<endl;
-            // cout<<recvbuf[26]<<endl;
-            // char *pt = recvbuf;
-            // memcpy(&recv.time_sec, pt, sizeof(float));
-            // pt += sizeof(float);
-            // memcpy(&recv.INS_lon, pt, sizeof(double));
-            // pt += sizeof(double);
-            // memcpy(&recv.INS_lat, pt, sizeof(double));
-            // pt += sizeof(double);
-            // memcpy(&recv.INS_heig, pt, sizeof(double));
-            // pt += sizeof(double);
-            // memcpy(&recv.INS_head, pt, sizeof(double));
-            // pt += sizeof(double);
-            // memcpy(&recv.INS_pitch, pt, sizeof(double));
-            // pt += sizeof(double);
-            // memcpy(&recv.INS_roll, pt, sizeof(double));
-            // pt += sizeof(double);
-            // memcpy(&recv.INS_Fb_x, pt, sizeof(double));
-            // pt += sizeof(double);
-            // memcpy(&recv.INS_Fb_y, pt, sizeof(double));
-            // pt += sizeof(double);
-            // memcpy(&recv.INS_Fb_z, pt, sizeof(double));
-            // pt += sizeof(double);
-            // memcpy(&recv.INS_Wibb_x, pt, sizeof(double));
-            // pt += sizeof(double);
-            // memcpy(&recv.INS_Wibb_y, pt, sizeof(double));
-            // pt += sizeof(double);
-            // memcpy(&recv.INS_WIbb_z, pt, sizeof(double));
-            // pt += sizeof(double);
-            // memcpy(&recv.INS_ve, pt, sizeof(double));
-            // pt += sizeof(double);
-            // memcpy(&recv.INS_vn, pt, sizeof(double));
-            // pt += sizeof(double);
-            // memcpy(&recv.INS_vu, pt, sizeof(double));
-            // pt += sizeof(double);
-            // memcpy(&recv.BA, pt, sizeof(float));
-            // pt += sizeof(float);
-            // memcpy(&recv.real_time_temp, pt, sizeof(float));
-            // pt += sizeof(float);
-            // memcpy(&recv.real_time_press, pt, sizeof(float));
-            // pt += sizeof(float);
-            // memcpy(&recv.Is_GPS_valid, pt, sizeof(int));
-            // pt += sizeof(int);
-            // memcpy(&recv.GPS_lon, pt, sizeof(float));
-            // pt += sizeof(float);
-            // memcpy(&recv.GPS_lat, pt, sizeof(float));
-            // pt += sizeof(float);
-            // memcpy(&recv.GPS_heig, pt, sizeof(float));
-            // pt += sizeof(float);
-            // memcpy(&recv.GPS_vu, pt, sizeof(float));
-            // pt += sizeof(float);
-            // memcpy(&recv.RA, pt, sizeof(float));
-            // pt += sizeof(float);
-
             mymutex.lock();
             if (data_recv_pool.size() >= stack_size)
             {
@@ -197,7 +113,7 @@ void recv_thread()
         }
         else if (recvnum >= 0)
         {
-            cout << "discarded short navigation datagram" << endl;
+            cout << "discarded malformed navigation datagram" << endl;
         }
         else
         {
