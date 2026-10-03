@@ -18,7 +18,7 @@
 
 重连退避在 WSL Debug/Release 下各 1/1 通过。GitHub Actions 的 Linux runner 安装 yaml-cpp 后，Debug 和 Release 均实际运行重连与配置回滚两项测试，各 2/2 通过。Windows/MSVC Release + yaml-cpp DLL 也为 2/2；现有第三方 DLL 与 MSVC Debug STL 不兼容，所以 Windows Debug 仅验证退避（1/1），不能把配置回滚写成 Windows Debug 通过。
 
-完整应用依赖 ROS1、Qt5、OpenCV、PCL、串口设备和 RTSP 源；当前环境不能完成 catkin 全量构建。RTSP 的 `VideoCapture` 已改为 worker join 后释放，避免跨线程 release 竞争，但底层网络读取可能阻塞，尚无固定退出时限保证；导航 UDP 改动同样仍需完整集成测试。传感器时间同步精度、RTSP 长稳或磁盘持续吞吐均无硬件验证。
+完整 ROS Noetic/Focal catkin 工作区（`serial_msgs`、`sbg_driver`、`lslidar_ls_driver`、`window_control`）已在 [GitHub CI](https://github.com/Vikebt/EmbeddedLinux_MultiSource_OpticalDataFusion/actions/runs/37108314382) 构建通过。编译不等于 ROS 节点运行，更不等于串口设备和 RTSP 源联调。RTSP 的 `VideoCapture` 已改为 worker join 后释放，避免跨线程 release 竞争，但底层网络读取可能阻塞，尚无固定退出时限保证；导航 UDP 改动仍需运行时集成测试。传感器时间同步精度、RTSP 长稳或磁盘持续吞吐均无硬件验证。
 
 宿主机可复现命令：
 
