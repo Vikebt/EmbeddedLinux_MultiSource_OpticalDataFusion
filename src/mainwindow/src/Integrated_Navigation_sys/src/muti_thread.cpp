@@ -1,6 +1,8 @@
 #include <muti_thread.h>
 #include <thread>      
 #include <chrono> 
+#include <cerrno>
+#include <sys/time.h>
 
 using namespace std;
 stack<data_recv> data_recv_pool;
@@ -52,6 +54,7 @@ void recv_thread()
     if (socketfd < 0)
     {
         cout << "recv_thread socket error!" << endl;
+        return;
     }
     else
     {
@@ -66,6 +69,15 @@ void recv_thread()
     {
         close(socketfd);
         cout << "recv_thread bind error!" << endl;
+        return;
+    }
+    const timeval receive_timeout{0, 100000};
+    if (setsockopt(socketfd, SOL_SOCKET, SO_RCVTIMEO,
+                   &receive_timeout, sizeof(receive_timeout)) < 0)
+    {
+        close(socketfd);
+        cout << "recv_thread timeout setup error!" << endl;
+        return;
     }
     int recvnum = 0;
     // char recvbuf[1024] = "";
@@ -74,10 +86,11 @@ void recv_thread()
     int stack_size = 1;
     while (!stop_thread)
     {
+        Client_addr_size = sizeof(Client_addr);
         //
         recvnum = recvfrom(socketfd, recvbuf, sizeof(recvbuf), 0, (struct sockaddr *)&Client_addr, &Client_addr_size);
         // recvnum = recvfrom(socketfd, recvbuf, sizeof(recvbuf), 0, nullptr, nullptr);
-        if (recvnum > 0)
+        if (recvnum == static_cast<int>(sizeof(recvbuf)))
         {
             recv.time_sec = static_cast<float>(recvbuf[0]);
             recv.INS_lon = recvbuf[1];
@@ -177,9 +190,14 @@ void recv_thread()
             data_recv_pool_sitan.push(recv);
             mymutex.unlock();
         }
-        else if (recvnum == 0)
+        else if (recvnum < 0 &&
+                 (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR))
         {
-            cout << "link close!" << endl;
+            continue;
+        }
+        else if (recvnum >= 0)
+        {
+            cout << "discarded short navigation datagram" << endl;
         }
         else
         {

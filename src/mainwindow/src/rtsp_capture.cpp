@@ -16,9 +16,7 @@ RTSPCapture::RTSPCapture():
 
 RTSPCapture::~RTSPCapture()
 {
-    capture_thread_flag = false;
     stop_thread();
-    cap_.release();
     std::cout<<"RTSP析构"<<std::endl;
 }
 
@@ -132,11 +130,12 @@ void RTSPCapture::start_thread()
 void RTSPCapture::stop_thread()
 {
     capture_thread_flag = false;
-    cap_.release();
     if (capture_thread && capture_thread->joinable()) {
         capture_thread->join();
     }
     capture_thread.reset();
+    // VideoCapture is only accessed by the worker while it is running.
+    cap_.release();
 }
 
 bool RTSPCapture::latestFrame(cv::Mat* frame) const
