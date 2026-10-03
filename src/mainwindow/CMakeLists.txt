@@ -285,6 +285,7 @@ set(HEADERS
 	src/location/include/matching.h
 	src/location/include/TensorMatch.h
 	src/Integrated_Navigation_sys/include/data_struct.h
+	src/Integrated_Navigation_sys/include/navigation_datagram.h
     	src/Integrated_Navigation_sys/include/Height_fusion.h
     	src/Integrated_Navigation_sys/include/INS_update.h
     	src/Integrated_Navigation_sys/include/Mat_Math.h

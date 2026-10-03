@@ -1,0 +1,32 @@
+name: Host regressions
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  host-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install YAML dependency
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libyaml-cpp-dev
+      - name: Debug build and tests
+        run: |
+          cmake -S src/mainwindow/tests/host -B build/ci-debug -DCMAKE_BUILD_TYPE=Debug
+          cmake --build build/ci-debug --parallel 2
+          ctest --test-dir build/ci-debug -N | grep yaml_config_transaction
+          ctest --test-dir build/ci-debug -N | grep navigation_datagram
+          ctest --test-dir build/ci-debug --output-on-failure
+      - name: Release build and tests
+        run: |
+          cmake -S src/mainwindow/tests/host -B build/ci-release -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/ci-release --parallel 2
+          ctest --test-dir build/ci-release -N | grep yaml_config_transaction
+          ctest --test-dir build/ci-release -N | grep navigation_datagram
+          ctest --test-dir build/ci-release --output-on-failure

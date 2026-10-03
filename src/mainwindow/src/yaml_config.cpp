@@ -73,32 +73,34 @@ void YamlConfig::writeYAML(const std::string &filename)
 YAML::Node YamlConfig::readYAML(const std::string &filename)
 {
     YAML::Node config = YAML::LoadFile(filename);
+    YamlConfig candidate(*this);
     // Accept the legacy flat profile during field upgrades, while the installed
     // profile uses grouped keys to avoid configuration scattering.
     const YAML::Node gimbal = config["gimbal"] ? config["gimbal"] : config;
     const YAML::Node barometric = config["barometric_altimeter"] ? config["barometric_altimeter"] : config;
     const YAML::Node radio = config["radio_altimeter"] ? config["radio_altimeter"] : config;
 
-    ReadOptional(gimbal, config["gimbal"] ? "serial_port" : "GIMBAL_SERIAL_PORT", &GIMBAL_SERIAL_PORT);
-    ReadOptional(gimbal, config["gimbal"] ? "baudrate" : "GIMBAL_SERIAL_BAUDRATE", &GIMBAL_SERIAL_BAUDRATE);
-    ReadOptional(gimbal, config["gimbal"] ? "pitch_angle" : "PITCH_ANGLE", &PITCH_ANGLE);
-    ReadOptional(gimbal, config["gimbal"] ? "yaw_angle" : "YAW_ANGLE", &YAW_ANGLE);
-    ReadOptional(gimbal, config["gimbal"] ? "camera_mode" : "CAMERA_MODE", &CAMERA_MODE);
-    ReadOptional(gimbal, config["gimbal"] ? "focus" : "FOCUS", &FOCUS);
-    ReadOptional(barometric, config["barometric_altimeter"] ? "serial_port" : "AIRPRESSURE_SERIAL_PORT", &AIRPRESSURE_SERIAL_PORT);
-    ReadOptional(barometric, config["barometric_altimeter"] ? "baudrate" : "AIRPRESSURE_SERIAL_BAUDRATE", &AIRPRESSURE_SERIAL_BAUDRATE);
-    ReadOptional(radio, config["radio_altimeter"] ? "serial_port" : "RADIO_SERIAL_PORT", &RADIO_SERIAL_PORT);
-    ReadOptional(radio, config["radio_altimeter"] ? "baudrate" : "RADIO_SERIAL_BAUDRATE", &RADIO_SERIAL_BAUDRATE);
+    ReadOptional(gimbal, config["gimbal"] ? "serial_port" : "GIMBAL_SERIAL_PORT", &candidate.GIMBAL_SERIAL_PORT);
+    ReadOptional(gimbal, config["gimbal"] ? "baudrate" : "GIMBAL_SERIAL_BAUDRATE", &candidate.GIMBAL_SERIAL_BAUDRATE);
+    ReadOptional(gimbal, config["gimbal"] ? "pitch_angle" : "PITCH_ANGLE", &candidate.PITCH_ANGLE);
+    ReadOptional(gimbal, config["gimbal"] ? "yaw_angle" : "YAW_ANGLE", &candidate.YAW_ANGLE);
+    ReadOptional(gimbal, config["gimbal"] ? "camera_mode" : "CAMERA_MODE", &candidate.CAMERA_MODE);
+    ReadOptional(gimbal, config["gimbal"] ? "focus" : "FOCUS", &candidate.FOCUS);
+    ReadOptional(barometric, config["barometric_altimeter"] ? "serial_port" : "AIRPRESSURE_SERIAL_PORT", &candidate.AIRPRESSURE_SERIAL_PORT);
+    ReadOptional(barometric, config["barometric_altimeter"] ? "baudrate" : "AIRPRESSURE_SERIAL_BAUDRATE", &candidate.AIRPRESSURE_SERIAL_BAUDRATE);
+    ReadOptional(radio, config["radio_altimeter"] ? "serial_port" : "RADIO_SERIAL_PORT", &candidate.RADIO_SERIAL_PORT);
+    ReadOptional(radio, config["radio_altimeter"] ? "baudrate" : "RADIO_SERIAL_BAUDRATE", &candidate.RADIO_SERIAL_BAUDRATE);
 
-    ValidatePort(GIMBAL_SERIAL_PORT, "gimbal serial_port");
-    ValidatePort(AIRPRESSURE_SERIAL_PORT, "barometric_altimeter serial_port");
-    ValidatePort(RADIO_SERIAL_PORT, "radio_altimeter serial_port");
-    ValidateBaudrate(GIMBAL_SERIAL_BAUDRATE, "gimbal baudrate");
-    ValidateBaudrate(AIRPRESSURE_SERIAL_BAUDRATE, "barometric_altimeter baudrate");
-    ValidateBaudrate(RADIO_SERIAL_BAUDRATE, "radio_altimeter baudrate");
+    ValidatePort(candidate.GIMBAL_SERIAL_PORT, "gimbal serial_port");
+    ValidatePort(candidate.AIRPRESSURE_SERIAL_PORT, "barometric_altimeter serial_port");
+    ValidatePort(candidate.RADIO_SERIAL_PORT, "radio_altimeter serial_port");
+    ValidateBaudrate(candidate.GIMBAL_SERIAL_BAUDRATE, "gimbal baudrate");
+    ValidateBaudrate(candidate.AIRPRESSURE_SERIAL_BAUDRATE, "barometric_altimeter baudrate");
+    ValidateBaudrate(candidate.RADIO_SERIAL_BAUDRATE, "radio_altimeter baudrate");
+
+    *this = candidate;
 
     return config;
-    // return YAML::LoadFile(filename);
 }
 
 void YamlConfig::printYAML(const YAML::Node &config)

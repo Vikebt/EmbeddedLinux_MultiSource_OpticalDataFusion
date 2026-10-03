@@ -6,7 +6,7 @@
 #include <semaphore.h>
 #include "TERCOM.h"
 // #include "muti_thread.h"
-#pragma pack(1)
+#pragma pack(push, 1)
 struct data_recv
 {
     // 时标信息
@@ -193,3 +193,4 @@ extern TERCOM t1;
 extern TERCOM t2;
 // extern SITAN s1;
 #endif // !global_variable
+#pragma pack(pop)

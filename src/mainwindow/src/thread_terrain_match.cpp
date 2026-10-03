@@ -11,9 +11,11 @@ ThreadTerrainMatch::~ThreadTerrainMatch()
 
 void ThreadTerrainMatch::match()
 {
+    if (thread1.joinable() || thread2.joinable() || thread3.joinable() ||
+        thread4.joinable() || thread5.joinable()) {
+        return;
+    }
     stop_thread = false;
-    sem_init(&tercom_recv_data_flag, 0, 0);
-    sem_init(&tercom_flag, 0, 0);
 
     vector<double> data_temp;
 
@@ -21,6 +23,7 @@ void ThreadTerrainMatch::match()
     if (!inputfile.is_open())
     {
         cout << "file open error!" << endl;
+        return;
     }
     string line;
     while (getline(inputfile, line))
@@ -32,6 +35,22 @@ void ThreadTerrainMatch::match()
         }
     }
     inputfile.close();
+
+    if (data_temp.size() < 9) {
+        cout << "initial position requires nine numeric values" << endl;
+        return;
+    }
+
+    if (sem_init(&tercom_recv_data_flag, 0, 0) != 0) {
+        cout << "terrain semaphore initialization failed" << endl;
+        return;
+    }
+    if (sem_init(&tercom_flag, 0, 0) != 0) {
+        sem_destroy(&tercom_recv_data_flag);
+        cout << "terrain semaphore initialization failed" << endl;
+        return;
+    }
+    semaphores_initialized_ = true;
 
     initial_posi[0] = data_temp[0];
     initial_posi[1] = data_temp[1];
@@ -79,9 +98,12 @@ void ThreadTerrainMatch::match()
 
 void ThreadTerrainMatch::stop_match()
 {
-    
+    if (!semaphores_initialized_) {
+        return;
+    }
     stop_thread = true;
-    usleep(100000);
+    sem_post(&tercom_recv_data_flag);
+    sem_post(&tercom_flag);
     
     if (thread1.joinable()) 
     {
@@ -111,6 +133,7 @@ void ThreadTerrainMatch::stop_match()
 
     sem_destroy(&tercom_recv_data_flag);
     sem_destroy(&tercom_flag);
+    semaphores_initialized_ = false;
 
     emit sig_match_finished();
 }
