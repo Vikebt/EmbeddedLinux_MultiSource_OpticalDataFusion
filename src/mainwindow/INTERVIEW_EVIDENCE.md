@@ -18,9 +18,9 @@
 
 ## 验证边界
 
-重连退避与导航报文解码在 WSL Debug/Release 下各 2/2 通过。[GitHub Linux CI](https://github.com/Vikebt/EmbeddedLinux_MultiSource_OpticalDataFusion/actions/runs/37121300009) 安装 yaml-cpp 后，Debug 和 Release 均实际运行重连、导航报文与配置回滚三项测试，各 3/3 通过。导航测试包含回环 UDP 超长包：不带 `MSG_TRUNC` 会只返回缓冲区长度，带该标志才返回原始长度。Windows/MSVC Release + yaml-cpp DLL 为 2/2；现有第三方 DLL 与 MSVC Debug STL 不兼容，所以 Windows Debug 仅验证退避（1/1），不能把配置回滚写成 Windows Debug 通过。
+重连退避与导航报文解码在 WSL Debug/Release 下各 2/2 通过。[最新 GitHub Linux CI](https://github.com/Vikebt/EmbeddedLinux_MultiSource_OpticalDataFusion/actions/runs/37189740444) 安装 yaml-cpp 后，Debug 和 Release 均运行重连、RTSP 运行时配置、导航报文与配置回滚四项测试，各 4/4 通过；源码凭据扫描也通过。导航测试包含回环 UDP 超长包：不带 `MSG_TRUNC` 会只返回缓冲区长度，带该标志才返回原始长度。Windows/MSVC Release + yaml-cpp DLL 此前为 2/2；本次在 MinGW 7.3 下单独构建并运行 RTSP 配置与退避测试 2/2，但完整 MinGW 构建因旧编译器缺少 `<filesystem>` 未通过。不能把这些结果写成完整 Windows 构建通过。
 
-完整 ROS Noetic/Focal catkin 工作区（`serial_msgs`、`sbg_driver`、`lslidar_ls_driver`、`window_control`）已在 [GitHub CI](https://github.com/Vikebt/EmbeddedLinux_MultiSource_OpticalDataFusion/actions/runs/37121299927) 构建通过。编译和回环 UDP 测试不等于 ROS 节点运行，更不等于真实串口、导航源和 RTSP 源联调。RTSP 的 `VideoCapture` 已改为 worker join 后释放，避免跨线程 release 竞争，但底层网络读取可能阻塞，尚无固定退出时限保证；传感器时间同步精度、RTSP 长稳或磁盘持续吞吐均无硬件验证。
+完整 ROS Noetic/Focal catkin 工作区（`serial_msgs`、`sbg_driver`、`lslidar_ls_driver`、`window_control`）已在[最新 GitHub CI](https://github.com/Vikebt/EmbeddedLinux_MultiSource_OpticalDataFusion/actions/runs/37189740456) 构建通过。编译和回环 UDP 测试不等于 ROS 节点运行，更不等于真实串口、导航源和 RTSP 源联调。RTSP 的 `VideoCapture` 已改为 worker join 后释放，避免跨线程 release 竞争，但底层网络读取可能阻塞，尚无固定退出时限保证；传感器时间同步精度、RTSP 长稳或磁盘持续吞吐均无硬件验证。旧版公开历史曾包含现场 RTSP 口令；当前代码不再编译该值，用户已确认设备端轮换并准备运行时配置，但仓库历史不会因新提交自动消失。
 
 点云写盘退出路径另有一项进程内回归：先让两帧排队，再置停止标志并直接运行保存槽，检查队列清空且两个 PLY 文件都存在。测试在[修复前](https://github.com/Vikebt/EmbeddedLinux_MultiSource_OpticalDataFusion/actions/runs/37187607646)明确失败，在[修复后](https://github.com/Vikebt/EmbeddedLinux_MultiSource_OpticalDataFusion/actions/runs/37187914761)随完整 ROS 构建通过。它证明待写数据排空逻辑，不证明慢磁盘下的退出时限或设备联调。
 
