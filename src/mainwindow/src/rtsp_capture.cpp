@@ -1,12 +1,13 @@
 #include "../include/rtsp_capture.h"
 #include "rtsp_capture.h"
 #include "reconnect_backoff.h"
+#include "rtsp_url_config.h"
 
 
 
-// 构造函数，使用宏定义的默认参数
+// The RTSP endpoint is supplied at runtime; no credentials are compiled in.
 RTSPCapture::RTSPCapture(): 
-    rtsp_url_(DEFAULT_RTSP_URL), 
+    rtsp_url_(window_control::rtspUrlFromEnvironment()),
     width_new_(DEFAULT_WIDTH), 
     height_new_(DEFAULT_HEIGHT),
     capture_thread_flag(false),
@@ -21,6 +22,10 @@ RTSPCapture::~RTSPCapture()
 }
 
 bool RTSPCapture::initVideoCapture() {
+    if (rtsp_url_.empty()) {
+        ROS_ERROR("WINDOW_CONTROL_RTSP_URL is not set; RTSP capture is disabled");
+        return false;
+    }
     //std::cout<<"aaaaa"<<std::endl;
      // 设置视频流分辨率 
     // cap_.set(cv::CAP_PROP_FRAME_WIDTH, 1280);

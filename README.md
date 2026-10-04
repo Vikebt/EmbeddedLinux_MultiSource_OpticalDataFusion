@@ -32,6 +32,7 @@ SBG GNSS/INS ───────────┤              │
 ## 技术要点
 
 - RTSP 视频在独立线程采集，以互斥锁保护帧快照；Qt 显示和记录流程不直接共享采集线程的 `cv::Mat`。
+- RTSP 连接地址只从运行时 `WINDOW_CONTROL_RTSP_URL` 读取；未设置时视频连接失败并提示，不使用仓库内的默认账号或口令。
 - RTSP 对象析构时先停止并回收工作线程；断流采用 250 ms 到 5 s 的指数退避，避免网络故障时忙循环。
 - 点云落盘采用独立工作线程和最多 3 帧的有界队列；慢速磁盘场景丢弃最旧数据，保持实时链路与内存上界。
 - ROS 回调只有 QNode 的 `spinOnce()` 一个调度所有者；各传感器通过加锁快照向 Qt 工作线程交付一致数据。
@@ -66,7 +67,12 @@ source /opt/ros/${ROS_DISTRO}/setup.bash
 catkin_make -DCMAKE_BUILD_TYPE=Release
 source devel/setup.bash
 export WINDOW_CONTROL_CONFIG=$PWD/src/mainwindow/config/device_profile.yaml
+read -r -s -p 'RTSP URL (use the rotated device password): ' WINDOW_CONTROL_RTSP_URL
+printf '\n'
+export WINDOW_CONTROL_RTSP_URL
 roslaunch window_control window_control.launch
 ```
+
+`WINDOW_CONTROL_RTSP_URL` 包含现场凭据，不要写入仓库、脚本或 shell 命令历史；上面的交互式输入不会把实际值作为命令保存。若由服务管理器启动，应在仓库外以受限权限提供环境配置。旧版公开提交中曾含真实 RTSP 凭据，**必须在设备端更换口令**；删掉当前源码中的字符串不能使历史中的旧口令失效，也不能代替设备端轮换。
 
 部署验证顺序：先校验设备配置和 `/dev` 软链接，再分别验证吊舱、RTSP、GNSS/INS、两类高度计及点云落盘，最后执行完整采集会话。`build/`、`devel/`、IDE 缓存和采集输出均不纳入版本控制。

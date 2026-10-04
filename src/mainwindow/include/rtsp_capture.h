@@ -21,7 +21,6 @@
 
 
 // 默认参数宏定义
-#define DEFAULT_RTSP_URL "rtsp://wheeltec:wheeltec@192.168.1.118/554"
 #define DEFAULT_SAVE_DIRECTORY "/home/wheeltec/qt_serial_ws/src/output/Photos"
 #define DEFAULT_WIDTH 3840
 #define DEFAULT_HEIGHT 2160

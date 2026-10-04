@@ -6,6 +6,10 @@ target_include_directories(test_reconnect_backoff PRIVATE ../../include)
 enable_testing()
 add_test(NAME reconnect_backoff COMMAND test_reconnect_backoff)
 
+add_executable(test_rtsp_url_config test_rtsp_url_config.cpp)
+target_include_directories(test_rtsp_url_config PRIVATE ../../include)
+add_test(NAME rtsp_url_config COMMAND test_rtsp_url_config)
+
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     add_executable(test_navigation_datagram test_navigation_datagram.cpp)
     target_include_directories(test_navigation_datagram PRIVATE

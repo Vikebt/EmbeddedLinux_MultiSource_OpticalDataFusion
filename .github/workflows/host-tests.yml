@@ -12,6 +12,12 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+      - name: Reject embedded authenticated RTSP URLs
+        run: |
+          if git grep -q 'rtsp://.*@' -- src/mainwindow/include src/mainwindow/src; then
+            echo 'Authenticated RTSP URLs must not be committed to source.' >&2
+            exit 1
+          fi
       - name: Install YAML dependency
         run: |
           sudo apt-get update
@@ -22,6 +28,7 @@ jobs:
           cmake --build build/ci-debug --parallel 2
           ctest --test-dir build/ci-debug -N | grep yaml_config_transaction
           ctest --test-dir build/ci-debug -N | grep navigation_datagram
+          ctest --test-dir build/ci-debug -N | grep rtsp_url_config
           ctest --test-dir build/ci-debug --output-on-failure
       - name: Release build and tests
         run: |
@@ -29,4 +36,5 @@ jobs:
           cmake --build build/ci-release --parallel 2
           ctest --test-dir build/ci-release -N | grep yaml_config_transaction
           ctest --test-dir build/ci-release -N | grep navigation_datagram
+          ctest --test-dir build/ci-release -N | grep rtsp_url_config
           ctest --test-dir build/ci-release --output-on-failure

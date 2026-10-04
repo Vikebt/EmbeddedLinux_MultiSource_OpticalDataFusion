@@ -10,6 +10,8 @@
 **/.vscode/
 *.user
 *.swp
+**/.env
+**/.env.*
 
 # Runtime capture output
 /data/

@@ -10,6 +10,7 @@
 | 四元数怎样转欧拉角？ | `GnssOutput::highFreqCallback` | IMU orientation 是四元数，必须通过 tf2 矩阵转换，不能把 x/y/z 分量直接当成 roll/pitch/yaw |
 | 线程如何安全退出？ | `RTSPCapture::stop_thread`、`QNode::~QNode` | 先置停止标志，再 join/wait，最后释放设备和对象；不使用 detached 工作线程 |
 | 网络断流为何要退避？ | `ReconnectBackoff` 与 RTSP 循环 | 立即重复 open 会造成 CPU/日志/网络风暴；指数退避设上限，并以 50 ms 小步等待保证停止响应 |
+| 公开仓库如何配置带口令的 RTSP 源？ | `rtsp_url_config.h`、`RTSPCapture::initVideoCapture`、`test_rtsp_url_config.cpp` | 不在固件或公开源码里编译现场口令；运行时从 `WINDOW_CONTROL_RTSP_URL` 读取，缺失或空值时不尝试连接。宿主测试覆盖该边界；设备端口令轮换与现场连接仍需单独验证 |
 | 慢磁盘怎样影响实时链路？ | `QNode::save_point_data` | 点云保存使用最多 3 帧的有界队列，满时丢最旧帧，限制内存并保留较新数据 |
 | 线程退出时队列里还有待保存数据怎么办？ | `ThreadPointcloud::slot_save_pointcloud`、`tests/test_pointcloud_shutdown.cpp` | 停止标志只阻止空队列时继续等待；已经入队的点云与文件名在同一把锁下成对取出，全部处理后才退出。回归测试在置停止标志后仍要求两帧均写成 PLY 文件 |
 | 配置文件解析失败会发生什么？ | `YamlConfig::readYAML`、`test_yaml_config.cpp` | 先解析并校验候选对象，全部成功后一次性提交；坏串口路径不会留下前面字段的半更新 |
