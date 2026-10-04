@@ -35,3 +35,5 @@ jobs:
         run: |
           source /opt/ros/noetic/setup.bash
           catkin_make -DCMAKE_BUILD_TYPE=Release -j2
+      - name: Verify pending point-cloud saves are drained on shutdown
+        run: ./devel/lib/window_control/test_pointcloud_shutdown

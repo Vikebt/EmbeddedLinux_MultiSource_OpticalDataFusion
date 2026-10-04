@@ -381,6 +381,14 @@ target_link_libraries (window_control ${UDEV_LIBRARIES})
 target_include_directories(window_control PRIVATE ${UDEV_INCLUDE_DIRS})
 add_dependencies(window_control sbg_driver_generate_messages_cpp)
 
+if(CATKIN_ENABLE_TESTING)
+  add_executable(test_pointcloud_shutdown
+    tests/test_pointcloud_shutdown.cpp
+    src/threadPointcloud.cpp
+    include/threadPointcloud.h)
+  target_link_libraries(test_pointcloud_shutdown Qt5::Core ${PCL_LIBRARIES})
+endif()
+
 install(TARGETS window_control
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
