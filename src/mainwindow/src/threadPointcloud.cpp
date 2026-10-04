@@ -37,7 +37,7 @@ void ThreadPointcloud::slot_save_pointcloud()
     //emit sig_save_finished();
 
    
-    while(thread_flag)
+    while(true)
     {
         pcl::PointCloud<pcl::PointXYZ> cloud;
         std::string file_name;
@@ -62,6 +62,11 @@ void ThreadPointcloud::slot_save_pointcloud()
         }
         else
         {
+            // A shutdown request must not discard saves already queued.
+            if (!thread_flag.load())
+            {
+                break;
+            }
             std::this_thread::sleep_for(std::chrono::milliseconds(50));
         }
 
