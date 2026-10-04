@@ -1,0 +1,55 @@
+name: RTSP security regression
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  host:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reject embedded authenticated RTSP URLs
+        run: |
+          if git grep -q 'rtsp://.*@' -- src/mainwindow/include src/mainwindow/src; then
+            echo 'Authenticated RTSP URLs must not be committed to source.' >&2
+            exit 1
+          fi
+      - name: Build and test host configuration
+        run: |
+          cmake -S src/mainwindow/tests/host -B build/security -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/security --parallel 2
+          ctest --test-dir build/security --output-on-failure
+
+  ros:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    container:
+      image: rostooling/setup-ros-docker:ubuntu-focal-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install ROS and native build dependencies
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            ros-noetic-ros-base \
+            ros-noetic-serial \
+            ros-noetic-cv-bridge \
+            ros-noetic-image-transport \
+            ros-noetic-tf2-geometry-msgs \
+            ros-noetic-tf2-ros \
+            ros-noetic-tf2-msgs \
+            ros-noetic-pcl-ros \
+            ros-noetic-pcl-conversions \
+            ros-noetic-nodelet \
+            ros-noetic-dynamic-reconfigure \
+            ros-noetic-diagnostic-updater \
+            libpcap-dev libudev-dev libyaml-cpp-dev \
+            libqt5svg5-dev libopencv-dev libeigen3-dev
+      - name: Build complete catkin workspace
+        shell: bash
+        run: |
+          source /opt/ros/noetic/setup.bash
+          catkin_make -DCMAKE_BUILD_TYPE=Release -j2

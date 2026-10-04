@@ -271,6 +271,7 @@ set(HEADERS
 	include/gnss_output.h
 	#include/px4_serial.h
 	include/rtsp_capture.h
+	include/rtsp_url_config.h
 	include/yaml_config.h
 	include/qnode.h
 	include/thread_control.h
