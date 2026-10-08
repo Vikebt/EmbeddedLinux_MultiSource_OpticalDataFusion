@@ -1,0 +1,39 @@
+name: ROS Noetic integration
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  catkin:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    container:
+      image: rostooling/setup-ros-docker:ubuntu-focal-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install ROS and native build dependencies
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            ros-noetic-ros-base \
+            ros-noetic-serial \
+            ros-noetic-cv-bridge \
+            ros-noetic-image-transport \
+            ros-noetic-tf2-geometry-msgs \
+            ros-noetic-tf2-ros \
+            ros-noetic-tf2-msgs \
+            ros-noetic-pcl-ros \
+            ros-noetic-pcl-conversions \
+            ros-noetic-nodelet \
+            ros-noetic-dynamic-reconfigure \
+            ros-noetic-diagnostic-updater \
+            libpcap-dev libudev-dev libyaml-cpp-dev \
+            libqt5svg5-dev libopencv-dev libeigen3-dev
+      - name: Build complete catkin workspace
+        shell: bash
+        run: |
+          source /opt/ros/noetic/setup.bash
+          catkin_make -DCMAKE_BUILD_TYPE=Release -j2
+      - name: Verify pending point-cloud saves are drained on shutdown
+        run: ./devel/lib/window_control/test_pointcloud_shutdown

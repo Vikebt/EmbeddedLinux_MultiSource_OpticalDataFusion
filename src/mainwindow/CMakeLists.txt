@@ -286,6 +286,7 @@ set(HEADERS
 	src/location/include/matching.h
 	src/location/include/TensorMatch.h
 	src/Integrated_Navigation_sys/include/data_struct.h
+	src/Integrated_Navigation_sys/include/navigation_datagram.h
     	src/Integrated_Navigation_sys/include/Height_fusion.h
     	src/Integrated_Navigation_sys/include/INS_update.h
     	src/Integrated_Navigation_sys/include/Mat_Math.h
@@ -380,6 +381,17 @@ target_link_libraries (window_control ${PCL_LIBRARIES})
 target_link_libraries (window_control ${UDEV_LIBRARIES})
 target_include_directories(window_control PRIVATE ${UDEV_INCLUDE_DIRS})
 add_dependencies(window_control sbg_driver_generate_messages_cpp)
+
+if(CATKIN_ENABLE_TESTING)
+  QT5_WRAP_CPP(TEST_POINTCLOUD_MOC include/threadPointcloud.h)
+  add_executable(test_pointcloud_shutdown
+    tests/test_pointcloud_shutdown.cpp
+    src/threadPointcloud.cpp
+    include/threadPointcloud.h
+    ${TEST_POINTCLOUD_MOC})
+  set_target_properties(test_pointcloud_shutdown PROPERTIES AUTOMOC OFF)
+  target_link_libraries(test_pointcloud_shutdown Qt5::Core ${PCL_LIBRARIES})
+endif()
 
 install(TARGETS window_control
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}

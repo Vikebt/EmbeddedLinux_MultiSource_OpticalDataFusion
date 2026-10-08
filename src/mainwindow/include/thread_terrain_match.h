@@ -28,6 +28,8 @@ public:
     std::thread thread5;
     std::thread thread3;
     std::thread thread4;
+private:
+    bool semaphores_initialized_{false};
 };
 
 
