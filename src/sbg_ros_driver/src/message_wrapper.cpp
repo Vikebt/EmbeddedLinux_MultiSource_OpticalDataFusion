@@ -871,7 +871,8 @@ const sbg_driver::SbgMagCalib MessageWrapper::createSbgMagCalibMessage(const Sbg
 {
   sbg_driver::SbgMagCalib mag_calib_message;
 
-  // TODO. SbgMagCalib is not implemented.
+  // This vendor driver version exposes only the calibration timestamp; the
+  // SbgMagCalib payload fields are unavailable in its bundled message API.
   mag_calib_message.header = createRosHeader(ref_log_mag_calib.timeStamp);
 
   return mag_calib_message;

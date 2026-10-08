@@ -199,7 +199,7 @@ odom:
   # 2 Measurement is always accepted
   rejectMode: 1
 
-# ToDo: event & CAN configuration
+# Event and CAN configuration intentionally use the device defaults.
 
 ############################### Output configuration ###############################
 # 0 Output is disabled
